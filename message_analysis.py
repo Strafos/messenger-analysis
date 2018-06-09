@@ -1,4 +1,3 @@
-import json
 import os
 import datetime
 from pprint import pprint
@@ -7,15 +6,15 @@ from collections import defaultdict
 
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.interpolate import UnivariateSpline
 from matplotlib.dates import date2num
+import pandas as pd
 
-import config
-from helpers import *
+import friends
+from helpers import get_json, check_participants
 
 def main():
-    for person in config.one_person:
-        path = "data/" + person + "/message.json"
+    # for person, path in friends.ALL_FRIENDS:
+    for person, path in friends.ALL_FRIENDS[:1]:
         message_json = get_json(path)
         if check_participants(message_json):
             messages = message_json.get("messages", [])
@@ -28,10 +27,9 @@ def main():
             # specific_word_count(messages, participant)
             # average_response_time(messages, participant)
             # sanity_check(messages)
-            messages_over_time(messages)
-
-def check_participants(message_json):
-    return len(message_json.get("participants", [])) == 1
+            data = messages_over_time(messages)
+            data = characters_over_time(messages)
+    graph_stat_over_time(data, "characters")
 
 def datetime_from_mtime(mtime):
     return datetime.datetime.fromtimestamp(mtime)
@@ -87,7 +85,6 @@ def average_response_time(messages, participant):
         prev_msg_t = curr_msg_t
         prev_sender = curr_sender
     for k, v in data.items():
-        # if k != "Zaibo Wang":
         print(k, v["response_time"]//60/v["responses"])
 
 def sanity_check(messages):
@@ -367,7 +364,6 @@ def groupchat_message_stats(messages):
 
 def messages_over_time(messages):
     """
-    Must generate participants at runtime
     {
         "person": {
             datetime.datetime: message_number
@@ -380,43 +376,83 @@ def messages_over_time(messages):
         m_time = datetime.datetime(year=m_time.year, month=m_time.month, day=1)
         participant = message["sender_name"]
         data[participant][m_time] += 1
-    graph_over_time(data)
+        data["total"][m_time] += 1
+    return data
 
-def graph_over_time(data):
-    for name, message_data in data.items():
-        try:
-            del message_data[datetime.datetime(year=datetime.datetime.now().year, month=datetime.datetime.now().month, day=1)]
-        except:
-            pass
-        dates = date2num(list(message_data.keys()))
-        counts = np.array(list(message_data.values()))
+def characters_over_time(messages):
+    """
+    {
+        "person": {
+            datetime.datetime: character_count
+        }
+    }
+    """
+    data = defaultdict(lambda: defaultdict(int))
+    for message in messages:
+        m_time = datetime_from_mtime(message["timestamp"])
+        m_time = datetime.datetime(year=m_time.year, month=m_time.month, day=1)
 
-        plt.ion()
-        dates, counts = zip(*sorted(zip(dates, counts)))
+        participant = message["sender_name"]
+        data[participant][m_time] += len(message.get("content", ""))
+        data["total"][m_time] += len(message.get("content", ""))
+    return data
+
+def graph_stat_over_time(data, data_type):
+    name = "total"
+    message_data = data["total"]
+
+    curr_month = datetime.datetime(year=datetime.datetime.now().year, month=datetime.datetime.now().month, day=1)
+    if message_data[curr_month]:
+        del message_data[curr_month] 
+    dates = date2num(list(message_data.keys()))
+    counts = np.array(list(message_data.values()))
+
+    plt.ion()
+    dates, counts = zip(*sorted(zip(dates, counts)))
 
 
-        # spl = UnivariateSpline(dates, counts, k=1)
-        # plt.plot(dates, counts, '.', dates, spl(dates), '-')
+    best_fit_str = "%s best fit" % name
 
-        best_fit_str = "%s best fit" % name
+    bar = plt.bar(dates, counts, width=20)
 
-        scatter = plt.plot_date(dates, counts, '.', label=name)
-        # p1 = np.poly1d(np.polyfit(dates[10:], counts[10:], 30))
-        p1 = np.poly1d(np.polyfit(dates, counts, 10))
-        best_fit = plt.plot_date(dates, p1(dates), '--', label=best_fit_str)
+    # scatter = plt.plot_date(dates, counts, '.', label=name)
+    # p1 = np.poly1d(np.polyfit(dates, counts, 10))
+    # p1 = np.poly1d(np.polyfit(dates[10:], counts[10:], 30))
+    # best_fit = plt.plot_date(dates, p1(dates), '--', label=best_fit_str)
+    ax = plt.subplot(111)
+    ax.xaxis_date()
 
-        # plt.legend(handles=[scatter, best_fit])
-        plt.legend()
-
-        # plt.plot(dates, counts, '.', dates, p1(dates), '--')
-
-        # plt.yscale('log')
-        plt.grid(True)
-        plt.ylim(-100)
-    plt.ylabel('# of Messages')
-    plt.title("Messages between %s" % " and ".join(data.keys()))
+    plt.grid(True)
+    # plt.ylim(-100, 3000)
+    plt.legend()
+    plt.ylabel('# of %s' % data_type)
+    plt.title("%s between %s" % (data_type, " and ".join(data.keys())))
     plt.show(block=True)
-        
-# group_chat_analysis()
-# most_messaged_friends(50)
-main()
+
+def most_messaged_by_month():
+    # Get top 20 messaged friends
+    # res = defaultdict(lambda: defaultdict(int))
+    res = defaultdict(lambda: ("", 0))
+
+    for person, path in friends.ALL_FRIENDS[:]:
+        message_json = get_json(path)
+        if check_participants(message_json):
+            messages = message_json.get("messages", [])
+            name = message_json.get("participants")[0]
+
+            data = characters_over_time(messages)
+            message_data = data["total"]
+
+            for date, count in message_data.items():
+                if res[date][1] < count:
+                    res[date] = (name, count)
+    res_list = [[k, v[0], v[1]] for k, v in res.items()]
+    res_list.sort()
+
+    res_list = [[str(i[0].year) + "-" + str(i[0].month), i[1], i[2]] for i in res_list] # turn datetime into year-month
+    print(tabulate(res_list[:-1], headers=["Month", "Most Messaged Person", "# of messages"]))
+
+if __name__ == "__main__":
+    # group_chat_analysis()
+    main()
+    # most_messaged_by_month()
