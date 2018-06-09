@@ -2,4 +2,4 @@ config.py
 data/
 __pycache__
 friends.py
-most_messaged_per_month
+most_messaged_per_month.txt

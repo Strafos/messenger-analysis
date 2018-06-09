@@ -15,6 +15,7 @@ from helpers import get_json, check_participants
 def main():
     # for person, path in friends.ALL_FRIENDS:
     for person, path in friends.ALL_FRIENDS[:1]:
+        path = friends.HORACE_HE
         message_json = get_json(path)
         if check_participants(message_json):
             messages = message_json.get("messages", [])
@@ -27,7 +28,7 @@ def main():
             # specific_word_count(messages, participant)
             # average_response_time(messages, participant)
             # sanity_check(messages)
-            data = messages_over_time(messages)
+            # data = messages_over_time(messages)
             data = characters_over_time(messages)
     graph_stat_over_time(data, "characters")
 
@@ -389,10 +390,20 @@ def characters_over_time(messages):
     """
     data = defaultdict(lambda: defaultdict(int))
     for message in messages:
-        m_time = datetime_from_mtime(message["timestamp"])
-        m_time = datetime.datetime(year=m_time.year, month=m_time.month, day=1)
-
         participant = message["sender_name"]
+
+        # Grab timestamp from message and cast it to a month + year timestamp
+        timestamp = datetime_from_mtime(message["timestamp"])
+        m_time = datetime.datetime(year=timestamp.year, month=timestamp.month, day=1)
+
+        # We use this to get all messages from a certain month
+        MESSAGE_DUMP = True
+        if MESSAGE_DUMP:
+            target = datetime.datetime(year=2017, month=10, day=1)
+            if target == m_time:
+                with open("message_dump.txt", 'a') as f:
+                    f.write(participant + ": " + message.get("content", "") + "\n")
+
         data[participant][m_time] += len(message.get("content", ""))
         data["total"][m_time] += len(message.get("content", ""))
     return data
@@ -413,21 +424,24 @@ def graph_stat_over_time(data, data_type):
 
     best_fit_str = "%s best fit" % name
 
+    ### BAR GRAPH ###
     bar = plt.bar(dates, counts, width=20)
+    ax = plt.subplot(111)
+    ax.xaxis_date()
 
+    ### SCATTER PLOT ###
+    ## I think this sucks compared to the bar graph
     # scatter = plt.plot_date(dates, counts, '.', label=name)
     # p1 = np.poly1d(np.polyfit(dates, counts, 10))
     # p1 = np.poly1d(np.polyfit(dates[10:], counts[10:], 30))
     # best_fit = plt.plot_date(dates, p1(dates), '--', label=best_fit_str)
-    ax = plt.subplot(111)
-    ax.xaxis_date()
+    # plt.autoscale(True)
 
     plt.grid(True)
-    # plt.ylim(-100, 3000)
+    # plt.ylim(-100)
     plt.legend()
     plt.ylabel('# of %s' % data_type)
-    plt.title("%s between %s" % (data_type, " and ".join(data.keys())))
-    plt.show(block=True)
+    plt.title("%s between %s" % (data_type, " and ".join([i for i in data.keys() if i != "total"])))
 
 def most_messaged_by_month():
     # Get top 20 messaged friends
@@ -456,3 +470,4 @@ if __name__ == "__main__":
     # group_chat_analysis()
     main()
     # most_messaged_by_month()
+    # plt.show(block=True)
