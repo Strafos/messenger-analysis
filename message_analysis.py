@@ -5,7 +5,13 @@ from pprint import pprint
 from tabulate import tabulate
 from collections import defaultdict
 
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.interpolate import UnivariateSpline
+from matplotlib.dates import date2num
+
 import config
+from helpers import *
 
 def main():
     for person in config.one_person:
@@ -23,10 +29,6 @@ def main():
             # average_response_time(messages, participant)
             # sanity_check(messages)
             messages_over_time(messages)
-
-def get_json(path):
-    with open(path, "r") as f:
-        return json.loads(f.read())
 
 def check_participants(message_json):
     return len(message_json.get("participants", [])) == 1
@@ -292,34 +294,6 @@ def cluster_message_group(messages):
     print_list.sort(key=lambda x: x[1], reverse=True)
     print(tabulate(print_list, headers=["Name", "# cluster messages", "% cluster messages"]))
 
-def most_messaged_friends(n):
-    # Return n most messaged friends and total number of messages between that friend
-    base_dir = "data"
-    all_paths = []
-    for dir in os.listdir(base_dir):
-        inner_dir = base_dir + "/" + dir
-        for filename in os.listdir(inner_dir):
-            if filename == "message.json":
-                filepath = inner_dir + "/" + filename
-                all_paths.append(filepath)
-
-    # Each element is a tuple of (friend_name, total_messages)
-    messages_per_friend = []
-    for path in all_paths:
-        message_json = get_json(path)
-        if check_participants(message_json):
-            messages = message_json.get("messages", [])
-            participant = message_json.get("participants")[0]
-            total_messages = count_messages(messages)
-            messages_per_friend.append((participant, total_messages))
-    messages_per_friend.sort(key=lambda x: x[1], reverse=True)
-    # pprint(messages_per_friend[:n])
-    count = 1
-    for i in messages_per_friend[:n]:
-        print(count, i)
-        count += 1
-
-    # pprint(messages_per_friend)
 
 def find_groupchat():
     # Find groupchat by some condition
@@ -396,16 +370,52 @@ def messages_over_time(messages):
     Must generate participants at runtime
     {
         "person": {
-            "year-month": message_number
+            datetime.datetime: message_number
         }
     }
     """
     data = defaultdict(lambda: defaultdict(int))
     for message in messages:
         m_time = datetime_from_mtime(message["timestamp"])
+        m_time = datetime.datetime(year=m_time.year, month=m_time.month, day=1)
         participant = message["sender_name"]
         data[participant][m_time] += 1
-    print(data)
+    graph_over_time(data)
+
+def graph_over_time(data):
+    for name, message_data in data.items():
+        try:
+            del message_data[datetime.datetime(year=datetime.datetime.now().year, month=datetime.datetime.now().month, day=1)]
+        except:
+            pass
+        dates = date2num(list(message_data.keys()))
+        counts = np.array(list(message_data.values()))
+
+        plt.ion()
+        dates, counts = zip(*sorted(zip(dates, counts)))
+
+
+        # spl = UnivariateSpline(dates, counts, k=1)
+        # plt.plot(dates, counts, '.', dates, spl(dates), '-')
+
+        best_fit_str = "%s best fit" % name
+
+        scatter = plt.plot_date(dates, counts, '.', label=name)
+        # p1 = np.poly1d(np.polyfit(dates[10:], counts[10:], 30))
+        p1 = np.poly1d(np.polyfit(dates, counts, 10))
+        best_fit = plt.plot_date(dates, p1(dates), '--', label=best_fit_str)
+
+        # plt.legend(handles=[scatter, best_fit])
+        plt.legend()
+
+        # plt.plot(dates, counts, '.', dates, p1(dates), '--')
+
+        # plt.yscale('log')
+        plt.grid(True)
+        plt.ylim(-100)
+    plt.ylabel('# of Messages')
+    plt.title("Messages between %s" % " and ".join(data.keys()))
+    plt.show(block=True)
         
 # group_chat_analysis()
 # most_messaged_friends(50)
