@@ -3,8 +3,26 @@ import os
 import datetime
 from pprint import pprint
 from tabulate import tabulate
+from collections import defaultdict
 
 import config
+
+def main():
+    for person in config.one_person:
+        path = "data/" + person + "/message.json"
+        message_json = get_json(path)
+        if check_participants(message_json):
+            messages = message_json.get("messages", [])
+            participant = message_json.get("participants")[0]
+            # message_freq(messages, participant)
+            # average_message_len_simple(messages, participant)
+            # average_message_len_aggregate(messages, participant)
+            # average_message_word_count_simple(messages, participant)
+            # average_message_word_count_aggregate(messages, participant)
+            # specific_word_count(messages, participant)
+            # average_response_time(messages, participant)
+            # sanity_check(messages)
+            messages_over_time(messages)
 
 def get_json(path):
     with open(path, "r") as f:
@@ -274,23 +292,6 @@ def cluster_message_group(messages):
     print_list.sort(key=lambda x: x[1], reverse=True)
     print(tabulate(print_list, headers=["Name", "# cluster messages", "% cluster messages"]))
 
-def main():
-    # path = "data/" + JAIDEV_PHADKE + "/message.json"
-    for person in config.people:
-        path = "data/" + person + "/message.json"
-        message_json = get_json(path)
-        if check_participants(message_json):
-            messages = message_json.get("messages", [])
-            participant = message_json.get("participants")[0]
-            # message_freq(messages, participant)
-            # average_message_len_simple(messages, participant)
-            # average_message_len_aggregate(messages, participant)
-            # average_message_word_count_simple(messages, participant)
-            # average_message_word_count_aggregate(messages, participant)
-            # specific_word_count(messages, participant)
-            average_response_time(messages, participant)
-            # sanity_check(messages)
-
 def most_messaged_friends(n):
     # Return n most messaged friends and total number of messages between that friend
     base_dir = "data"
@@ -389,7 +390,23 @@ def groupchat_message_stats(messages):
                            float("%.2f" % (clusters[1]/total_clusters))])
     print_list.sort(key=lambda x: x[1], reverse=True)
     print(tabulate(print_list, headers=["Name", "% characters", "% messages", "% clusters"]))
+
+def messages_over_time(messages):
+    """
+    Must generate participants at runtime
+    {
+        "person": {
+            "year-month": message_number
+        }
+    }
+    """
+    data = defaultdict(lambda: defaultdict(int))
+    for message in messages:
+        m_time = datetime_from_mtime(message["timestamp"])
+        participant = message["sender_name"]
+        data[participant][m_time] += 1
+    print(data)
         
 # group_chat_analysis()
-most_messaged_friends(50)
-# main()
+# most_messaged_friends(50)
+main()
