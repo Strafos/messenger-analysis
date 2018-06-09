@@ -12,6 +12,8 @@ import pandas as pd
 import friends
 from helpers import get_json, check_participants
 
+MY_NAME = "Zaibo Wang"
+
 def main():
     # for person, path in friends.ALL_FRIENDS:
     for person, path in friends.ALL_FRIENDS[:1]:
@@ -363,7 +365,7 @@ def groupchat_message_stats(messages):
     print_list.sort(key=lambda x: x[1], reverse=True)
     print(tabulate(print_list, headers=["Name", "% characters", "% messages", "% clusters"]))
 
-def messages_over_time(messages):
+def messages_over_time(messages, period="month"):
     """
     {
         "person": {
@@ -374,7 +376,16 @@ def messages_over_time(messages):
     data = defaultdict(lambda: defaultdict(int))
     for message in messages:
         m_time = datetime_from_mtime(message["timestamp"])
-        m_time = datetime.datetime(year=m_time.year, month=m_time.month, day=1)
+        if period == "Day":
+            m_time = datetime.datetime(year=m_time.year, month=m_time.month, day=m_time.day)
+            most_recent_period = datetime.datetime(year=datetime.datetime.now().year, month=datetime.datetime.now().month, day=datetime.datetime.now().day)
+        elif period == "Month":
+            m_time = datetime.datetime(year=m_time.year, month=m_time.month, day=1)
+            most_recent_period = datetime.datetime(year=datetime.datetime.now().year, month=datetime.datetime.now().month, day=1)
+        elif period == "Year":
+            m_time = datetime.datetime(year=m_time.year, month=1, day=1)
+            most_recent_period = datetime.datetime(year=datetime.datetime.now().year, month=1, day=1)
+
         participant = message["sender_name"]
         data[participant][m_time] += 1
         data["total"][m_time] += 1
@@ -436,16 +447,25 @@ def graph_stat_over_time(data, data_type):
     # p1 = np.poly1d(np.polyfit(dates[10:], counts[10:], 30))
     # best_fit = plt.plot_date(dates, p1(dates), '--', label=best_fit_str)
     # plt.autoscale(True)
-
-    plt.grid(True)
+    # plt.grid(True)
     # plt.ylim(-100)
+
     plt.legend()
     plt.ylabel('# of %s' % data_type)
     plt.title("%s between %s" % (data_type, " and ".join([i for i in data.keys() if i != "total"])))
 
+def graph(x, y, title, x_axis, y_axis, width=20):
+    bar = plt.bar(x, y, width=width)
+    ax = plt.subplot(111)
+    ax.xaxis_date()
+    # plt.grid(True)
+    # plt.ylim(-100)
+    plt.legend()
+    plt.xlabel(x_axis)
+    plt.ylabel(y_axis)
+    plt.title(title)
+
 def most_messaged_by_month():
-    # Get top 20 messaged friends
-    # res = defaultdict(lambda: defaultdict(int))
     res = defaultdict(lambda: ("", 0))
 
     for person, path in friends.ALL_FRIENDS[:]:
@@ -466,8 +486,29 @@ def most_messaged_by_month():
     res_list = [[str(i[0].year) + "-" + str(i[0].month), i[1], i[2]] for i in res_list] # turn datetime into year-month
     print(tabulate(res_list[:-1], headers=["Month", "Most Messaged Person", "# of messages"]))
 
+def total_messages():
+    period = "Year"
+    res = defaultdict(int)
+
+    for person, path in friends.ALL_FRIENDS:
+        message_json = get_json(path)
+        if check_participants(message_json):
+            messages = message_json.get("messages", [])
+            name = message_json.get("participants")[0]
+
+            data = messages_over_time(messages, period)
+            message_data = data[MY_NAME]
+
+            for date, count in message_data.items():
+                res[date] += count
+    res_list = sorted([(date, count) for date, count in res.items()])
+    dates = [elem[0] for elem in res_list[:-1]]
+    counts = [elem[1] for elem in res_list[:-1]]
+    graph(dates, counts, "Total Messages Sent by %s per %s" % (MY_NAME, period), "", "Total Messages by %s" % period, width=200)
+
 if __name__ == "__main__":
     # group_chat_analysis()
-    main()
+    # main()
+    total_messages()
+    plt.show(block=True)
     # most_messaged_by_month()
-    # plt.show(block=True)
