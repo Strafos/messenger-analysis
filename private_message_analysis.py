@@ -16,6 +16,7 @@ def main(paths=[]):
         message_json = get_json(path)
         messages = message_json.get("messages", [])
         participant = message_json.get("participants")[0]
+        count_specific_word(messages)
         # message_freq(messages, participant)
         # average_message_len_simple(messages, participant)
         # average_message_len_aggregate(messages, participant)
@@ -24,8 +25,8 @@ def main(paths=[]):
         # specific_word_count(messages, participant)
         # average_response_time(messages, participant)
         # sanity_check(messages)
-        data = get_all_stats(messages)
-        graph_stat(data, stat="Clusters", period="Month", name="total")
+        # data = get_all_stats(messages)
+        # graph_stat(data, stat="Clusters", period="Month", name="total")
 
 def datetime_from_mtime(mtime):
     return datetime.datetime.fromtimestamp(mtime)
@@ -82,26 +83,22 @@ def get_all_stats(messages):
         prev_sender = sender_name
     return data
 
-def message_dump(messages):
+def message_dump(messages, period="Month"):
     """
     Dump messages from a specific time
     """
-    for message in messages:
+    for message in reversed(messages):
         participant = message["sender_name"]
 
         # Grab timestamp from message and cast it to a month + year timestamp
         timestamp = datetime_from_mtime(message["timestamp"])
-        m_time = datetime.datetime(year=timestamp.year, month=timestamp.month, day=1)
+        m_time = bucket_datetime(timestamp, period=period)
 
         # We use this to get all messages from a certain month
-        target = datetime.datetime(year=2017, month=10, day=1)
-        if target == m_time:
+        TARGET = datetime.datetime(year=2017, month=10, day=1)
+        if TARGET == m_time:
             with open("message_dump.txt", 'a') as f:
                 f.write(participant + ": " + message.get("content", "") + "\n")
-
-        data[participant][m_time] += len(message.get("content", ""))
-        data["total"][m_time] += len(message.get("content", ""))
-    return data
 
 def graph_stat(data, stat="Messages", period="Month", name="total", message_data=None):
     """
@@ -176,9 +173,14 @@ def top_n_stat(n, stat="Messages", period="Month"):
     # We want to sort by date
     res_list = sorted([[date, count_list] for date, count_list in res.items()])
 
-    # Sorry...
-    res_list = [[date.strftime(time_format(period)), *sorted(count_list, key=lambda x: x[1], reverse=True)[:n]] for date, count_list in res_list]
-    print(tabulate(res_list, headers=[period, *[str(i) for i in range(1, n+1)]]))
+    table = []
+    for date, count_list in res_list:
+        date_str = date.strftime(time_format(period))                     # Format date by period
+        count_list.sort(key=lambda x: x[1], reverse=True)                 # Sort by count
+        count_list = count_list[:n]                                       # Truncate to top n
+        table.append([date_str, *[name for name, count in count_list]]) # Only names
+        # table.append([date_str, *["%s: %d" % (name, count) for name, count in count_list]]) # Only names and counts
+    print(tabulate(table, headers=[period, *[str(i) for i in range(1, n+1)]]))
 
 def total_stat_sent(stat="Messages", period="Year"):
     """
@@ -208,11 +210,31 @@ def total_stat_sent(stat="Messages", period="Year"):
     plt.ylabel('# of %s' % stat)
     plt.title("Total %s Sent per %s" % (stat, period))
 
+def count_specific_word(messages):
+    """
+    TODO normalization by message count
+    """
+    words = ["lol", "lmao"]
+    counters = defaultdict(lambda: defaultdict(int))
+    for keyword in words:
+        for message in messages:
+            sender = message["sender_name"]
+            content = message.get("content", "")
+            count = content.lower().count(keyword)
+            counters[keyword][sender] += count
+    table = []
+    for keyword, participants in counters.items():
+        for participant, counter in participants.items():
+            table.append([keyword, participant, counter])
+    print(tabulate(table, headers=["Word", *counters.keys()]))
+        # for name, counts in data.items():
+        #     print("keyword: %s, %s count: %d" % (keyword, name, counts["word_count"]))
+
 if __name__ == "__main__":
     # top_stat(stat="Characters", period="Month")
-    top_n_stat(5, stat="Characters", period="Year")
-    # main([friends.RISHI_TRIPATHY])
-    # total_stat_sent(period="Year")
+    # top_n_stat(5, stat="Characters", period="Month")
+    main([friends.RISHI_TRIPATHY])
+    # total_stat_sent(stat="Characters", period="Year")
     plt.show(block=True)
 
 # TODO

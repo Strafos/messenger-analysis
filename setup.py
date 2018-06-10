@@ -7,6 +7,14 @@ from helpers import get_json, count_messages, check_participants
 BASE_DIR = "/home/zaibo/code/fb_analysis/data"
 MY_NAME = "Zaibo Wang"
 
+# To look at groupchats, use find_groupchat() by adding your conditions to narrow down the search
+# Then, add them to the GROUPCHATS list
+GROUPCHATS = [
+    # (name, path)
+    ("situation_room", "/home/zaibo/code/fb_analysis/data/thesituationroom_69ae5d10b1/message.json"),
+    ("eggplant", "/home/zaibo/code/fb_analysis/data/96a68cd96d/message.json"),
+]
+
 def generate_friends(n=50):
     """
     Generate friends.py which is used by most of the other scripts
@@ -50,11 +58,11 @@ def generate_groupchats():
     """
     with open("friends.py", "a") as f:
         name = "situation_room"
-        path = "/home/zaibo/code/fb_analysis/data/thesituationroom_69ae5d10b1/message.json"
+        path = ""
         write_wrapper(f, name, path)
 
         name = "eggplant"
-        path = "/home/zaibo/code/fb_analysis/data/96a68cd96d/message.json"
+        path = ""
         write_wrapper(f, name, path)
 
 def find_groupchat():
