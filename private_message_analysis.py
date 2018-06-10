@@ -214,7 +214,7 @@ def count_specific_word(messages):
     """
     TODO normalization by message count
     """
-    words = ["lol", "lmao"]
+    words = ["crater", "stagger"]
     counters = defaultdict(lambda: defaultdict(int))
     for keyword in words:
         for message in messages:
@@ -224,9 +224,8 @@ def count_specific_word(messages):
             counters[keyword][sender] += count
     table = []
     for keyword, participants in counters.items():
-        for participant, counter in participants.items():
-            table.append([keyword, participant, counter])
-    print(tabulate(table, headers=["Word", *counters.keys()]))
+        table.append([keyword, *participants.values()])
+    print(tabulate(table, headers=["Word", *participants.keys()]))
         # for name, counts in data.items():
         #     print("keyword: %s, %s count: %d" % (keyword, name, counts["word_count"]))
 
