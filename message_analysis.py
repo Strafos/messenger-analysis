@@ -7,16 +7,12 @@ from collections import defaultdict
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.dates import date2num
-import pandas as pd
 
 import friends
-from helpers import get_json, check_participants
+from helpers import get_json, check_participants, bucket_datetime
 
-MY_NAME = "Zaibo Wang"
-
-def main(path):
-    # for person, path in friends.ALL_FRIENDS:
-    for i in range(1):
+def main(paths=[]):
+    for path in paths:
         message_json = get_json(path)
         if check_participants(message_json):
             messages = message_json.get("messages", [])
@@ -29,9 +25,8 @@ def main(path):
             # specific_word_count(messages, participant)
             # average_response_time(messages, participant)
             # sanity_check(messages)
-            # data = messages_over_time(messages)
-            data = characters_over_time(messages)
-    graph_stat_over_time(data, "characters")
+            data = get_all_stats(messages)
+    graph_stat_over_time(data["characters"]["Day"], "characters")
 
 def datetime_from_mtime(mtime):
     return datetime.datetime.fromtimestamp(mtime)
@@ -239,37 +234,54 @@ def specific_word_count(messages, participant, normalize=None):
         for name, counts in data.items():
             print("keyword: %s, %s count: %d" % (keyword, name, counts["word_count"]))
 
-# features
-# longest dry spell
-# average message length
-# "enters" per response
-# Average response time
-
-
-def messages_over_time(messages, period="month"):
+def get_all_stats(messages):
     """
+    Given 1 on 1 messages, generate stats over periods
+
+    Supported stats:
+    "characters": total characters
+    "messages": total times enter is pressed
+    "clusters": all messages sent before being interupted by other participant is one cluster
+
+    the core data structure is:
     {
-        "person": {
-            datetime.datetime: message_number
+        "name1": {
+            datetime.datetime: stat_val
+        },
+        "name2": {
+            datetime.datetime: stat_val
         }
     }
-    """
-    data = defaultdict(lambda: defaultdict(int))
-    for message in messages:
-        m_time = datetime_from_mtime(message["timestamp"])
-        if period == "Day":
-            m_time = datetime.datetime(year=m_time.year, month=m_time.month, day=m_time.day)
-            most_recent_period = datetime.datetime(year=datetime.datetime.now().year, month=datetime.datetime.now().month, day=datetime.datetime.now().day)
-        elif period == "Month":
-            m_time = datetime.datetime(year=m_time.year, month=m_time.month, day=1)
-            most_recent_period = datetime.datetime(year=datetime.datetime.now().year, month=datetime.datetime.now().month, day=1)
-        elif period == "Year":
-            m_time = datetime.datetime(year=m_time.year, month=1, day=1)
-            most_recent_period = datetime.datetime(year=datetime.datetime.now().year, month=1, day=1)
 
-        participant = message["sender_name"]
-        data[participant][m_time] += 1
-        data["total"][m_time] += 1
+    Data is a four layer dictionary which returns 
+    a "core data structure" given a Stat and Period key
+    Ex: data["messages"]["Day"] gives daily total message statistic
+    """
+    periods = ["Year", "Month", "Day"]
+    stats = ["characters", "messages", "clusters"]
+
+    # Create a four-layered dictionary
+    # Stat -> Period -> name -> datetime.datetime -> value
+    data = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(int))))
+
+    prev_sender = None
+    for message in reversed(messages):
+        timestamp = datetime_from_mtime(message["timestamp"])
+        sender_name = message["sender_name"]
+        content = message.get("content", "")
+
+        for period in periods:
+            m_time = bucket_datetime(timestamp, period)
+
+            # Aggregate for messages, characters, and clusters
+            for name in [sender_name, "total"]:
+                data["messages"][period][name][m_time] += 1
+                data["characters"][period][name][m_time] += len(content)
+                if sender_name != prev_sender:
+                    data["clusters"][period][name][m_time] += 1
+            
+
+        prev_sender = sender_name
     return data
 
 def characters_over_time(messages):
@@ -301,19 +313,16 @@ def characters_over_time(messages):
     return data
 
 def graph_stat_over_time(data, data_type):
+    # pprint(data)
     name = "total"
     message_data = data["total"]
 
     curr_month = datetime.datetime(year=datetime.datetime.now().year, month=datetime.datetime.now().month, day=1)
-    if message_data[curr_month]:
-        del message_data[curr_month] 
     dates = date2num(list(message_data.keys()))
     counts = np.array(list(message_data.values()))
 
+    # Sort by dates
     dates, counts = zip(*sorted(zip(dates, counts)))
-
-
-    best_fit_str = "%s best fit" % name
 
     ### BAR GRAPH ###
     bar = plt.bar(dates, counts, width=20)
@@ -321,7 +330,8 @@ def graph_stat_over_time(data, data_type):
     ax.xaxis_date()
 
     ### SCATTER PLOT ###
-    ## I think this sucks compared to the bar graph
+    # I think the bar graph displays data better
+    # best_fit_str = "%s best fit" % name
     # scatter = plt.plot_date(dates, counts, '.', label=name)
     # p1 = np.poly1d(np.polyfit(dates, counts, 10))
     # p1 = np.poly1d(np.polyfit(dates[10:], counts[10:], 30))
@@ -365,8 +375,10 @@ def most_messaged_by_month():
     res_list = [[str(i[0].year) + "-" + str(i[0].month), i[1], i[2]] for i in res_list] # turn datetime into year-month
     print(tabulate(res_list[:-1], headers=["Month", "Most Messaged Person", "# of messages"]))
 
-def total_messages():
-    period = "Year"
+def total_messages_sent(name, period="Year"):
+    """
+    Graph all messages sent by YOU
+    """
     res = defaultdict(int)
 
     for person, path in friends.ALL_FRIENDS:
@@ -376,19 +388,25 @@ def total_messages():
             name = message_json.get("participants")[0]
 
             data = messages_over_time(messages, period)
-            message_data = data[MY_NAME]
+            message_data = data[friends.MY_NAME]
 
             for date, count in message_data.items():
                 res[date] += count
     res_list = sorted([(date, count) for date, count in res.items()])
     dates = [elem[0] for elem in res_list[:-1]]
     counts = [elem[1] for elem in res_list[:-1]]
-    bar_graph(dates, counts, "Total Messages Sent by %s per %s" % (MY_NAME, period), "", "Total Messages by %s" % period, width=200)
+    bar_graph(dates, counts, "Total Messages Sent by %s per %s" % (friends.MY_NAME, period), "", "Total Messages by %s" % period, width=200)
 
 if __name__ == "__main__":
     # group_chat_analysis()
-    main(friends.HORACE_HE)
+    main([friends.HORACE_HE])
     # most_messaged_by_month()
     # total_messages()
     plt.ion()
     plt.show(block=True)
+
+# TODO
+# longest dry spell
+# average message length
+# "enters" per response
+# Average response time

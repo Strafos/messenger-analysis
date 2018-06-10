@@ -6,6 +6,7 @@ from helpers import get_json, check_participants
 from message_analysis import count_messages
 
 BASE_DIR = "/home/zaibo/code/fb_analysis/data"
+MY_NAME = "Zaibo Wang"
 
 def generater_friends(n=50):
     """
@@ -57,6 +58,10 @@ def generate_groupchats():
         path = "/home/zaibo/code/fb_analysis/data/96a68cd96d/message.json"
         write_wrapper(f, name, path)
 
+def generate_name():
+    with open("friends.py", "a") as f:
+        write_wrapper(f, "MY_NAME", MY_NAME)
+
 def find_groupchat():
     """
     genereate will not generate group chats, so we must find them manually
@@ -82,3 +87,4 @@ def write_wrapper(f, variable, value):
 
 generater_friends(50)
 generate_groupchats()
+generate_name()
