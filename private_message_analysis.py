@@ -116,29 +116,6 @@ def graph_stat(data, stat="Messages", period="Month", name="total", message_data
     plt.ylabel('# of %s' % stat)
     plt.title("%s between %s per %s" % (stat, " and ".join([i for i in data[stat][period].keys() if i != "total"]), period))
 
-def top_stat(stat="Messages", period="Month"):
-    """
-    Print top messaged person per period in a table
-    """
-    res = defaultdict(lambda: ("", 0))
-
-    for person, path in friends.ALL_FRIENDS:
-        message_json = get_json(path)
-        messages = message_json.get("messages", [])
-        name = message_json.get("participants")[0]
-
-        message_data = get_all_stats(messages)[stat][period]["total"]
-
-        for date, count in message_data.items():
-            if res[date][1] < count:
-                res[date] = (name, count)
-    
-    # We want to sort by date
-    res_list = sorted([[date, name, count] for date, (name, count) in res.items()])
-
-    res_list = [[date.strftime(time_format(period)), name, count] for date, name, count in res_list]
-    print(tabulate(res_list, headers=[period, "Most %s" % stat, "Count"]))
-
 def top_n_stat(n, stat="Messages", period="Month"):
     """
     Print top n messaged person per period in a table
@@ -217,18 +194,18 @@ def main(paths=[]):
         messages = message_json.get("messages", [])
 
         data = get_all_stats(messages)
-        graph_stat(data, stat="Messages", period="Month", name="total")
+        graph_stat(data, stat="Characters", period="Month", name="total")
 
         # count_specific_word(messages)
         # message_freq(messages, participant)
         # average_response_time(messages, participant)
 
 if __name__ == "__main__":
-    # top_stat(stat="Characters", period="Month")
-    # top_n_stat(5, stat="Characters", period="Month")
+    top_n_stat(1, stat="Characters", period="Month")
     # main(friends.ALL_FRIENDS)
+    # main([friends.JAIDEV_PHADKE])
     # generate_averages([friends.TIM_FENG])
-    generate_averages(friends.ALL_FRIEND_PATHS)
+    # generate_averages(friends.ALL_FRIEND_PATHS)
     # total_stat_sent(stat="Characters", period="Year")
     plt.show(block=True)
 
