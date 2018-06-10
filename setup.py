@@ -2,8 +2,8 @@ import os
 import re
 from pprint import pprint
 
-from helpers import get_json, check_participants
-from message_analysis import count_messages
+from helpers import get_json
+from private_message_analysis import count_messages
 
 BASE_DIR = "/home/zaibo/code/fb_analysis/data"
 MY_NAME = "Zaibo Wang"

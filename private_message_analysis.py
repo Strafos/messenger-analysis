@@ -9,25 +9,23 @@ import numpy as np
 from matplotlib.dates import date2num
 
 import friends
-from helpers import get_json, check_participants, bucket_datetime
+from helpers import get_json, bucket_datetime, time_format
 
 def main(paths=[]):
     for path in paths:
         message_json = get_json(path)
-        if check_participants(message_json):
-            messages = message_json.get("messages", [])
-            participant = message_json.get("participants")[0]
-            # message_freq(messages, participant)
-            # average_message_len_simple(messages, participant)
-            # average_message_len_aggregate(messages, participant)
-            # average_message_word_count_simple(messages, participant)
-            # average_message_word_count_aggregate(messages, participant)
-            # specific_word_count(messages, participant)
-            # average_response_time(messages, participant)
-            # sanity_check(messages)
-            data = get_all_stats(messages)
+        messages = message_json.get("messages", [])
+        participant = message_json.get("participants")[0]
+        # message_freq(messages, participant)
+        # average_message_len_simple(messages, participant)
+        # average_message_len_aggregate(messages, participant)
+        # average_message_word_count_simple(messages, participant)
+        # average_message_word_count_aggregate(messages, participant)
+        # specific_word_count(messages, participant)
+        # average_response_time(messages, participant)
+        # sanity_check(messages)
+        data = get_all_stats(messages)
     graph_stat(data, stat="Characters", period="Day", name="total")
-    graph_stat(data, stat="Characters", period="Month", name="Horace He")
 
 def datetime_from_mtime(mtime):
     return datetime.datetime.fromtimestamp(mtime)
@@ -142,26 +140,28 @@ def graph_stat(data, stat="Messages", period="Month", name="total"):
     plt.ylabel('# of %s' % stat)
     plt.title("%s between %s" % (stat, " and ".join([i for i in data[stat][period].keys() if i != "total"])))
 
-def most_messaged_by_month():
+def top_stat(stat="Messages", period="Month"):
+    """
+    Print top messaged person per period in table
+    """
     res = defaultdict(lambda: ("", 0))
 
-    for person, path in friends.ALL_FRIENDS[:]:
+    for person, path in friends.ALL_FRIENDS:
         message_json = get_json(path)
-        if check_participants(message_json):
-            messages = message_json.get("messages", [])
-            name = message_json.get("participants")[0]
+        messages = message_json.get("messages", [])
+        name = message_json.get("participants")[0]
 
-            data = characters_over_time(messages)
-            message_data = data["total"]
+        message_data = get_all_stats(messages)[stat][period]["total"]
 
-            for date, count in message_data.items():
-                if res[date][1] < count:
-                    res[date] = (name, count)
-    res_list = [[k, v[0], v[1]] for k, v in res.items()]
-    res_list.sort()
+        for date, count in message_data.items():
+            if res[date][1] < count:
+                res[date] = (name, count)
+    
+    # We want to sort by date
+    res_list = sorted([[date, name, count] for date, (name, count) in res.items()])
 
-    res_list = [[str(i[0].year) + "-" + str(i[0].month), i[1], i[2]] for i in res_list] # turn datetime into year-month
-    print(tabulate(res_list[:-1], headers=["Month", "Most Messaged Person", "# of messages"]))
+    res_list = [[date.strftime(time_format(period)), name, count] for date, name, count in res_list]
+    print(tabulate(res_list, headers=[period, "Most %s" % stat, "Count"]))
 
 def total_messages_sent(name, period="Year"):
     """
@@ -186,8 +186,8 @@ def total_messages_sent(name, period="Year"):
     bar_graph(dates, counts, "Total Messages Sent by %s per %s" % (friends.MY_NAME, period), "", "Total Messages by %s" % period, width=200)
 
 if __name__ == "__main__":
-    main([friends.HORACE_HE])
-    # group_chat_analysis()
+    top_stat(stat="Messages", period="Year")
+    # main([friends.HORACE_HE])
     # most_messaged_by_month()
     # total_messages()
     plt.ion()
