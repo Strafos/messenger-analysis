@@ -4,28 +4,7 @@ import matplotlib.pyplot as plt
 from tabulate import tabulate
 
 from helpers import get_json
-import config
-
-def find_groupchat():
-    """
-    most_messaged_friends will not generate group chats, so we must find them manually
-    We can set up conditions to narrow down the chats (ex: find all groupchats with 15+ people)
-    """
-    base_dir = "data"
-    all_paths = []
-    for dir in os.listdir(base_dir):
-        inner_dir = base_dir + "/" + dir
-        for filename in os.listdir(inner_dir):
-            if filename == "message.json":
-                filepath = inner_dir + "/" + filename
-                all_paths.append(filepath)
-
-    for path in all_paths:
-        message_json = get_json(path)
-        party = message_json.get("participants", "")
-        # Make some condition to look for group chats
-        if len(party) > 15:
-            print(path)
+import friends
 
 def main(path):
     message_json = get_json(path)
@@ -34,6 +13,9 @@ def main(path):
 
 def groupchat_message_stats(messages):
     """
+    Creates dictionary of counter + cluster + message data of all members of a group chat
+    and displays data as table and pie chart
+
     Example
     counters = {
         "characters": {
@@ -50,7 +32,6 @@ def groupchat_message_stats(messages):
         }
     }
     """
-    # Get count of characters, messages, message clusters
     counters = {
         "characters": {},
         "messages": {},
@@ -90,25 +71,23 @@ def groupchat_message_stats(messages):
     ax1 = plt.subplot(311)
     ax1.pie(characters, labels=labels, autopct='%1.1f%%',
             shadow=True, startangle=90)
-    ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+    ax1.axis('equal')
     plt.title("Characters")
 
     ax1 = plt.subplot(312)
     ax1.pie(clusters, labels=labels, autopct='%1.1f%%',
             shadow=True, startangle=90)
-    ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+    ax1.axis('equal')
     plt.title("Clusters")
 
     ax1 = plt.subplot(313)
     ax1.pie(messages, labels=labels, autopct='%1.1f%%',
             shadow=True, startangle=90)
-    ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+    ax1.axis('equal')
     plt.title("Messages")
 
     plt.show()
 
-
-
 if __name__ == "__main__":
-    path = config.situation_room
+    path = friends.situation_room
     main(path)

@@ -105,33 +105,6 @@ def count_messages(messages):
         counters[sender] = 1 if sender not in counters else counters[sender] + 1
     return sum(counters.values()) if len(participants) == 2 else 0
 
-def count_messages_group(messages):
-    counters = {}
-    for message in messages:
-        sender = message["sender_name"]
-        counters[sender] = 1 if sender not in counters else counters[sender] + 1
-    tot = sum([v for k, v in counters.items()])
-    print_list = []
-    for name, val in counters.items():
-        print_list.append([name, val, float("%.2f" % (val/tot))])
-    print_list.sort(key=lambda x: x[1], reverse=True)
-    print(tabulate(print_list, headers=["Name", "# of messages", "%% of all messages"]))
-    return counters
-
-def count_characters_group(messages):
-    counters = {}
-    for message in messages:
-        sender = message["sender_name"]
-        chars = len(message.get("content", ""))
-        counters[sender]["characters"] = chars if sender not in counters else counters[sender]["characters"] + chars
-    tot = sum([v for k, v in counters.items()])
-    print_list = []
-    for name, val in counters.items():
-        print_list.append([name, val, float("%.2f" % (val/tot))])
-    print_list.sort(key=lambda x: x[1], reverse=True)
-    print(tabulate(print_list, headers=["Name", "# of characters", "%% of all characters"]))
-    return counters
-
 def generate_normalization(messages):
     counters = {}
     for message in messages:
@@ -272,97 +245,6 @@ def specific_word_count(messages, participant, normalize=None):
 # "enters" per response
 # Average response time
 
-def cluster_message_group(messages):
-    """
-    One cluster is all the messages sent before being interupted by someone else
-
-    Noted error that the last message cluster is not aggregated
-    """
-    data = {}
-    prev_sender = messages[-1]["sender_name"]
-    for message in messages:
-        curr_sender = message["sender_name"]
-        if curr_sender != prev_sender:
-            data[prev_sender] = 1 if not data.get(prev_sender) else data[prev_sender] + 1
-        prev_sender = curr_sender
-
-    tot = sum([val for key, val in data.items()])
-    print_list = []
-    for name, val in data.items():
-        print_list.append([name, val, float("%.2f" % (val/tot))])
-    print_list.sort(key=lambda x: x[1], reverse=True)
-    print(tabulate(print_list, headers=["Name", "# cluster messages", "% cluster messages"]))
-
-
-def find_groupchat():
-    # Find groupchat by some condition
-    base_dir = "data"
-    all_paths = []
-    for dir in os.listdir(base_dir):
-        inner_dir = base_dir + "/" + dir
-        for filename in os.listdir(inner_dir):
-            if filename == "message.json":
-                filepath = inner_dir + "/" + filename
-                all_paths.append(filepath)
-
-    for path in all_paths:
-        message_json = get_json(path)
-        party = message_json.get("participants", "")
-        # Make some condition to look for group chats
-        if len(party) > 15:
-            print(path)
-
-def group_chat_analysis():
-    message_json = get_json(config.situation_room)
-    messages = message_json.get("messages", [])
-    # count_messages_group(messages)
-    # count_characters_group(messages)
-    # cluster_message_group(messages)
-    groupchat_message_stats(messages)
-
-def groupchat_message_stats(messages):
-    """
-    counters = {
-        "characters": {
-            "Person 1": 100,
-            "Person 2": 50
-        },
-        "messages": {
-            "Person 1": 200,
-            "Person 2": 100
-        }
-    }
-    """
-    # Get count of characters, messages, message clusters
-    counters = {
-        "characters": {},
-        "messages": {},
-        "clusters": {}
-    }
-    prev_sender = messages[-1]["sender_name"]
-    for message in messages:
-        sender = message["sender_name"]
-        chars = len(message.get("content", ""))
-        counters["characters"][sender] = chars if not counters["characters"].get(sender) else counters["characters"].get(sender) + chars
-        counters["messages"][sender] = 1 if not counters["messages"].get(sender) else counters["messages"].get(sender) + 1
-        if sender != prev_sender:
-            counters["clusters"][sender] = 1 if not counters["clusters"].get(sender) else counters["clusters"].get(sender) + 1
-        prev_sender = sender
-
-    total_clusters = sum([v for k, v in counters["clusters"].items()])
-    total_messages = sum([v for k, v in counters["messages"].items()])
-    total_characters = sum([v for k, v in counters["characters"].items()])
-    print_list = []
-    for messages, chars, clusters in zip(counters["messages"].items(), counters["characters"].items(), counters["clusters"].items()):
-        # messages, chars, clusters are a tuple of (<Name>, <Count>)
-        # Ex: ("Zaibo Wang", 500)
-        name = messages[0]
-        print_list.append([name, 
-                           float("%.2f" % (chars[1]/total_characters)), 
-                           float("%.2f" % (messages[1]/total_messages)),
-                           float("%.2f" % (clusters[1]/total_clusters))])
-    print_list.sort(key=lambda x: x[1], reverse=True)
-    print(tabulate(print_list, headers=["Name", "% characters", "% messages", "% clusters"]))
 
 def messages_over_time(messages, period="month"):
     """
@@ -428,7 +310,6 @@ def graph_stat_over_time(data, data_type):
     dates = date2num(list(message_data.keys()))
     counts = np.array(list(message_data.values()))
 
-    plt.ion()
     dates, counts = zip(*sorted(zip(dates, counts)))
 
 
@@ -454,6 +335,7 @@ def graph_stat_over_time(data, data_type):
     plt.title("%s between %s" % (data_type, " and ".join([i for i in data.keys() if i != "total"])))
 
 def bar_graph(x, y, title, x_axis, y_axis, width=20):
+    """Make a bar graph"""
     bar = plt.bar(x, y, width=width)
     ax = plt.subplot(111)
     ax.xaxis_date()
@@ -508,4 +390,5 @@ if __name__ == "__main__":
     main(friends.HORACE_HE)
     # most_messaged_by_month()
     # total_messages()
+    plt.ion()
     plt.show(block=True)
