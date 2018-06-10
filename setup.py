@@ -2,7 +2,7 @@ import os
 import re
 from pprint import pprint
 
-from helpers import get_json, count_messages
+from helpers import get_json, count_messages, check_participants
 
 BASE_DIR = "/home/zaibo/code/fb_analysis/data"
 MY_NAME = "Zaibo Wang"

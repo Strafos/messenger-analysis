@@ -82,15 +82,10 @@ def get_all_stats(messages):
         prev_sender = sender_name
     return data
 
-def characters_over_time(messages):
+def message_dump(messages):
     """
-    {
-        "person": {
-            datetime.datetime: character_count
-        }
-    }
+    Dump messages from a specific time
     """
-    data = defaultdict(lambda: defaultdict(int))
     for message in messages:
         participant = message["sender_name"]
 
@@ -99,12 +94,10 @@ def characters_over_time(messages):
         m_time = datetime.datetime(year=timestamp.year, month=timestamp.month, day=1)
 
         # We use this to get all messages from a certain month
-        MESSAGE_DUMP = True
-        if MESSAGE_DUMP:
-            target = datetime.datetime(year=2017, month=10, day=1)
-            if target == m_time:
-                with open("message_dump.txt", 'a') as f:
-                    f.write(participant + ": " + message.get("content", "") + "\n")
+        target = datetime.datetime(year=2017, month=10, day=1)
+        if target == m_time:
+            with open("message_dump.txt", 'a') as f:
+                f.write(participant + ": " + message.get("content", "") + "\n")
 
         data[participant][m_time] += len(message.get("content", ""))
         data["total"][m_time] += len(message.get("content", ""))
@@ -193,9 +186,9 @@ def total_stat_sent(stat="Messages", period="Year"):
     plt.title("Total %s Sent per %s" % (stat, period))
 
 if __name__ == "__main__":
-    # top_stat(stat="Messages", period="Year")
+    top_stat(stat="Characters", period="Month")
     # main([friends.HORACE_HE])
-    total_stat_sent(period="Year")
+    # total_stat_sent(period="Year")
     plt.show(block=True)
 
 # TODO
