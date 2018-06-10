@@ -1,5 +1,6 @@
 import json
 import datetime
+from collections import defaultdict
 
 def get_json(path):
     with open(path, "r") as f:
@@ -23,22 +24,21 @@ def bucket_datetime(timestamp, period="Month"):
         return datetime.datetime(year=timestamp.year, month=timestamp.month, day=1)
     elif period == "Year":
         return datetime.datetime(year=timestamp.year, month=1, day=1)
-    else:
-        raise Exception("Unsupported period: %s", period)
+    raise Exception("Unsupported period: %s", period)
 
 def count_messages(messages):
-    counters = {}
+    counters = defaultdict(int)
     participants = set()
     for message in messages:
-        sender = message["sender_name"]
+        sender = message.get("sender_name", "")
         participants.add(sender)
-        counters[sender] = 1 if sender not in counters else counters[sender] + 1
+        counters[sender] += 1
     return sum(counters.values()) if len(participants) == 2 else 0
 
 def time_format(period):
     """strftime formatting"""
     if period == "Day":
-        return "%d-%m-%Y"
+        return "%m-%d-%Y"
     elif period == "Month":
         return "%m-%Y"
     elif period == "Year":

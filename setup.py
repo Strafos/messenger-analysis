@@ -7,7 +7,7 @@ from helpers import get_json, count_messages, check_participants
 BASE_DIR = "/home/zaibo/code/fb_analysis/data"
 MY_NAME = "Zaibo Wang"
 
-def generater_friends(n=50):
+def generate_friends(n=50):
     """
     Generate friends.py which is used by most of the other scripts
     friends.py will contain paths to the top n most frequently messaged friends
@@ -57,13 +57,9 @@ def generate_groupchats():
         path = "/home/zaibo/code/fb_analysis/data/96a68cd96d/message.json"
         write_wrapper(f, name, path)
 
-def generate_name():
-    with open("friends.py", "a") as f:
-        write_wrapper(f, "MY_NAME", MY_NAME)
-
 def find_groupchat():
     """
-    genereate will not generate group chats, so we must find them manually
+    generate will not generate group chats, so we must find them manually
     We can set up conditions to narrow down the chats (ex: find all groupchats with 15+ people)
     """
     all_paths = []
@@ -81,9 +77,13 @@ def find_groupchat():
         if len(party) > 15:
             print(path)
 
+def generate_name():
+    with open("friends.py", "a") as f:
+        write_wrapper(f, "MY_NAME", MY_NAME)
+
 def write_wrapper(f, variable, value):
     f.write("%s = \"%s\"\n" % (variable, value))
 
-generater_friends(50)
+generate_friends(50)
 generate_groupchats()
 generate_name()
