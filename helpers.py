@@ -44,6 +44,24 @@ def time_format(period):
     elif period == "Year":
         return "%Y"
 
+def message_dump(messages, period="Month"):
+    """
+    Dump messages from a specific time
+    """
+    for message in reversed(messages):
+        participant = message["sender_name"]
+
+        # Grab timestamp from message and cast it to a month + year timestamp
+        timestamp = datetime.datetime.fromtimestamp(message["timestamp"])
+        m_time = bucket_datetime(timestamp, period=period)
+
+        # We use this to get all messages from a certain month
+        TARGET = datetime.datetime(year=2017, month=10, day=1)
+        if TARGET == m_time:
+            with open("message_dump.txt", 'a') as f:
+                f.write(participant + ": " + message.get("content", "") + "\n")
+
+
 width_dict = {
     "Year": 200,
     "Month": 35,

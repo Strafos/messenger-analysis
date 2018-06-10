@@ -20,6 +20,7 @@ def main(paths=[]):
 
         data = get_all_stats(messages)
         graph_stat(data, stat="Words", period="Month", name="total")
+        generate_averages(data)
 
         # message_freq(messages, participant)
         # average_message_len_simple(messages, participant)
@@ -27,9 +28,6 @@ def main(paths=[]):
         # average_message_word_count_simple(messages, participant)
         # average_message_word_count_aggregate(messages, participant)
         # average_response_time(messages, participant)
-
-def datetime_from_mtime(mtime):
-    return datetime.datetime.fromtimestamp(mtime)
 
 def get_all_stats(messages):
     """
@@ -67,7 +65,7 @@ def get_all_stats(messages):
 
     prev_sender = None
     for message in reversed(messages):
-        timestamp = datetime_from_mtime(message["timestamp"])
+        timestamp = datetime.datetime.fromtimestamp(message["timestamp"])
         sender_name = message["sender_name"]
         content = message.get("content", "")
 
@@ -84,23 +82,6 @@ def get_all_stats(messages):
 
         prev_sender = sender_name
     return data
-
-def message_dump(messages, period="Month"):
-    """
-    Dump messages from a specific time
-    """
-    for message in reversed(messages):
-        participant = message["sender_name"]
-
-        # Grab timestamp from message and cast it to a month + year timestamp
-        timestamp = datetime_from_mtime(message["timestamp"])
-        m_time = bucket_datetime(timestamp, period=period)
-
-        # We use this to get all messages from a certain month
-        TARGET = datetime.datetime(year=2017, month=10, day=1)
-        if TARGET == m_time:
-            with open("message_dump.txt", 'a') as f:
-                f.write(participant + ": " + message.get("content", "") + "\n")
 
 def graph_stat(data, stat="Messages", period="Month", name="total", message_data=None):
     """
