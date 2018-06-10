@@ -3,6 +3,7 @@ import datetime
 from pprint import pprint
 from tabulate import tabulate
 from collections import defaultdict
+from itertools import combinations
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,23 +12,26 @@ from matplotlib.dates import date2num
 import friends
 from helpers import get_json, bucket_datetime, time_format, width_dict
 
-def main(paths=[]):
+def generate_averages(paths=friends.ALL_FRIEND_PATHS):
+    stats = ["Characters", "Words", "Messages", "Clusters"]
+    average_stats = []
     for path in paths:
         message_json = get_json(path)
         messages = message_json.get("messages", [])
         participant = message_json.get("participants")[0]
-        # count_specific_word(messages)
-
         data = get_all_stats(messages)
-        graph_stat(data, stat="Words", period="Month", name="total")
-        generate_averages(data)
 
-        # message_freq(messages, participant)
-        # average_message_len_simple(messages, participant)
-        # average_message_len_aggregate(messages, participant)
-        # average_message_word_count_simple(messages, participant)
-        # average_message_word_count_aggregate(messages, participant)
-        # average_response_time(messages, participant)
+        for sender in data["Characters"]["Month"]:
+            if sender == "total":
+                continue
+            sender_averages = []
+            for small_stat, big_stat in combinations(stats, 2):
+                sender_averages.append(sum(data[small_stat]["Year"][sender].values())/sum(data[big_stat]["Year"][sender].values()))
+            if sender == "Zaibo Wang":
+                sender = "Zaibo + %s" % participant
+            average_stats.append([sender, *sender_averages])
+    average_stats.sort(key=lambda x: x[2], reverse=True)
+    print(tabulate(average_stats, headers=["Name", *["%s per %s" % combo for combo in combinations(stats, 2)]]))
 
 def get_all_stats(messages):
     """
@@ -39,7 +43,9 @@ def get_all_stats(messages):
     "Clusters": all messages sent before being interupted by other participant is one cluster
     "Words": Naively defined as length of space separated message
 
-    the core data structure is:
+    data is a four layer dictionary
+    Stat -> Period -> name -> datetime.datetime -> value
+    data returns a "core data structure" given a Stat and Period key:
     {
         "name1": {
             datetime.datetime: stat_val1
@@ -51,16 +57,12 @@ def get_all_stats(messages):
             datetime.datetime: stat_val1+stat_val2
         },
     }
-
-    data is a four layer dictionary which returns 
-    a "core data structure" given a Stat and Period key
-    Ex: data["messages"]["Day"] gives daily total message statistic
+    Ex: data["Messages"]["Day"] gives daily total message statistic
     """
     periods = ["Year", "Month", "Day"]
     stats = ["Characters", "Messages", "Clusters", "Words"]
 
     # Create a four-layered defaultdict with default int leaf
-    # Stat -> Period -> name -> datetime.datetime -> value
     data = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(int))))
 
     prev_sender = None
@@ -96,7 +98,7 @@ def graph_stat(data, stat="Messages", period="Month", name="total", message_data
     dates, counts = zip(*sorted(zip(dates, counts)))
 
     ### BAR GRAPH ###
-    bar = plt.bar(dates, counts, width=20)
+    bar = plt.bar(dates, counts, width=width_dict[period])
     ax = plt.subplot(111)
     ax.xaxis_date()
 
@@ -157,7 +159,7 @@ def top_n_stat(n, stat="Messages", period="Month"):
     res_list = sorted([[date, count_list] for date, count_list in res.items()])
 
     table = []
-    for date, count_list in res_list:
+    for date, count_list in res_list[30:]:
         date_str = date.strftime(time_format(period))                     # Format date by period
         count_list.sort(key=lambda x: x[1], reverse=True)                 # Sort by count
         count_list = count_list[:n]                                       # Truncate to top n
@@ -168,7 +170,6 @@ def top_n_stat(n, stat="Messages", period="Month"):
 def total_stat_sent(stat="Messages", period="Year"):
     """
     Graph all of a stat sent by YOU
-    Must setup MY_NAME in friends.py
     """
     res = defaultdict(int)
 
@@ -191,7 +192,7 @@ def total_stat_sent(stat="Messages", period="Year"):
     ax = plt.subplot(111)
     ax.xaxis_date()
     plt.ylabel('# of %s' % stat)
-    plt.title("Total %s Sent per %s" % (stat, period))
+    plt.title("Total %s Sent by %s per %s" % (stat, friends.MY_NAME, period))
 
 def count_specific_word(messages):
     """
@@ -210,10 +211,24 @@ def count_specific_word(messages):
         table.append([keyword, *participants.values()])
     print(tabulate(table, headers=["Word", *participants.keys()]))
 
+def main(paths=[]):
+    for path in paths:
+        message_json = get_json(path)
+        messages = message_json.get("messages", [])
+
+        data = get_all_stats(messages)
+        graph_stat(data, stat="Messages", period="Month", name="total")
+
+        # count_specific_word(messages)
+        # message_freq(messages, participant)
+        # average_response_time(messages, participant)
+
 if __name__ == "__main__":
     # top_stat(stat="Characters", period="Month")
     # top_n_stat(5, stat="Characters", period="Month")
-    main([friends.RISHI_TRIPATHY])
+    # main(friends.ALL_FRIENDS)
+    # generate_averages([friends.TIM_FENG])
+    generate_averages(friends.ALL_FRIEND_PATHS)
     # total_stat_sent(stat="Characters", period="Year")
     plt.show(block=True)
 

@@ -12,7 +12,7 @@ MY_NAME = "Zaibo Wang"
 GROUPCHATS = [
     # (name, path)
     ("situation_room", "/home/zaibo/code/fb_analysis/data/thesituationroom_69ae5d10b1/message.json"),
-    ("eggplant", "/home/zaibo/code/fb_analysis/data/96a68cd96d/message.json"),
+    ("eggplant", "/home/zaibo/code/fb_analysis/data/96a68cd96d/message.json")
 ]
 
 def generate_friends(n=50):
@@ -22,6 +22,8 @@ def generate_friends(n=50):
     """
     all_paths = []
     for dir in os.listdir(BASE_DIR):
+        if dir.startswith("."): # Macs have a .DS_STORE file which throws an exception
+            continue
         inner_dir = BASE_DIR + "/" + dir
         for filename in os.listdir(inner_dir):
             if filename == "message.json":
@@ -37,19 +39,28 @@ def generate_friends(n=50):
             messages = message_json.get("messages", [])
             participant = message_json.get("participants")[0]
             total_messages = count_messages(messages)
-            messages_per_friend.append((participant, total_messages, path))
+            if total_messages != 0:
+                messages_per_friend.append((participant, total_messages, path))
     messages_per_friend.sort(key=lambda x: x[1], reverse=True)
 
-    name_pattern = "(?P<first_name>[A-Z]*) (?P<last_name>[A-Z]*)"
+    # People have weird names, this regex can break...
+    name_pattern = "(?P<first_name>([A-Z]|-)*) (?P<last_name>([A-Z]|-)*)"
     with open("friends.py", "w") as f:
-        names = []
+        names_and_paths = []
+        paths = []
         for name, _, path in messages_per_friend[:n]:
             name = name.upper()
             regex = re.match(name_pattern, name)
+            if not regex:
+                continue
             parsed_name = "_".join([regex.group("first_name"), regex.group("last_name")])
+            parsed_name = parsed_name.replace(" ", "_")
+            parsed_name = parsed_name.replace("-", "_")
             write_wrapper(f, parsed_name, path)
-            names.append((name, path))
-        f.write("ALL_FRIENDS = %s\n" % str(names))
+            names_and_paths.append((name, path))
+            paths.append(path)
+        f.write("ALL_FRIENDS = %s\n" % str(names_and_paths))
+        f.write("ALL_FRIEND_PATHS = %s\n" % str(paths))
 
 def generate_groupchats():
     """
@@ -57,13 +68,8 @@ def generate_groupchats():
     to append them to the end of friends.py
     """
     with open("friends.py", "a") as f:
-        name = "situation_room"
-        path = ""
-        write_wrapper(f, name, path)
-
-        name = "eggplant"
-        path = ""
-        write_wrapper(f, name, path)
+        for name, path in GROUPCHATS:
+            write_wrapper(f, name, path)
 
 def find_groupchat():
     """
