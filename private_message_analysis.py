@@ -16,17 +16,17 @@ def main(paths=[]):
         message_json = get_json(path)
         messages = message_json.get("messages", [])
         participant = message_json.get("participants")[0]
-        count_specific_word(messages)
+        # count_specific_word(messages)
+
+        data = get_all_stats(messages)
+        graph_stat(data, stat="Words", period="Month", name="total")
+
         # message_freq(messages, participant)
         # average_message_len_simple(messages, participant)
         # average_message_len_aggregate(messages, participant)
         # average_message_word_count_simple(messages, participant)
         # average_message_word_count_aggregate(messages, participant)
-        # specific_word_count(messages, participant)
         # average_response_time(messages, participant)
-        # sanity_check(messages)
-        # data = get_all_stats(messages)
-        # graph_stat(data, stat="Clusters", period="Month", name="total")
 
 def datetime_from_mtime(mtime):
     return datetime.datetime.fromtimestamp(mtime)
@@ -39,6 +39,7 @@ def get_all_stats(messages):
     "Characters": total characters
     "Messages": total times enter is pressed
     "Clusters": all messages sent before being interupted by other participant is one cluster
+    "Words": Naively defined as length of space separated message
 
     the core data structure is:
     {
@@ -58,7 +59,7 @@ def get_all_stats(messages):
     Ex: data["messages"]["Day"] gives daily total message statistic
     """
     periods = ["Year", "Month", "Day"]
-    stats = ["Characters", "Messages", "Clusters"]
+    stats = ["Characters", "Messages", "Clusters", "Words"]
 
     # Create a four-layered defaultdict with default int leaf
     # Stat -> Period -> name -> datetime.datetime -> value
@@ -73,13 +74,14 @@ def get_all_stats(messages):
         for period in periods:
             m_time = bucket_datetime(timestamp, period)
 
-            # Aggregate for messages, characters, and clusters
+            # Aggregate for messages, characters, clusters, words
             for name in [sender_name, "total"]:
-                data["Messages"][period][name][m_time] += 1
                 data["Characters"][period][name][m_time] += len(content)
+                data["Words"][period][name][m_time] += len(content.split(" "))
+                data["Messages"][period][name][m_time] += 1
                 if sender_name != prev_sender:
                     data["Clusters"][period][name][m_time] += 1
-            
+
         prev_sender = sender_name
     return data
 
@@ -102,7 +104,7 @@ def message_dump(messages, period="Month"):
 
 def graph_stat(data, stat="Messages", period="Month", name="total", message_data=None):
     """
-    Graph data from get_all_stats
+    Graph parameterized stat from get_all_stats
     """
 
     # Parse data and sort by dates
@@ -226,8 +228,6 @@ def count_specific_word(messages):
     for keyword, participants in counters.items():
         table.append([keyword, *participants.values()])
     print(tabulate(table, headers=["Word", *participants.keys()]))
-        # for name, counts in data.items():
-        #     print("keyword: %s, %s count: %d" % (keyword, name, counts["word_count"]))
 
 if __name__ == "__main__":
     # top_stat(stat="Characters", period="Month")
