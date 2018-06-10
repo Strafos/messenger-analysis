@@ -41,15 +41,24 @@ def groupchat_message_stats(messages):
     for message in messages:
         sender = message["sender_name"]
         chars = len(message.get("content", ""))
+
+        # Aggregate characters
         counters["characters"][sender] = chars if not counters["characters"].get(sender) else counters["characters"].get(sender) + chars
+
+        # Aggregate messages
         counters["messages"][sender] = 1 if not counters["messages"].get(sender) else counters["messages"].get(sender) + 1
+
+        # Aggregate clusters
         if sender != prev_sender:
             counters["clusters"][sender] = 1 if not counters["clusters"].get(sender) else counters["clusters"].get(sender) + 1
+
         prev_sender = sender
 
     total_clusters = sum([v for k, v in counters["clusters"].items()])
     total_messages = sum([v for k, v in counters["messages"].items()])
     total_characters = sum([v for k, v in counters["characters"].items()])
+
+    # Assemble data in print_list format to print out as table
     print_list = []
     for messages, chars, clusters in zip(counters["messages"].items(), counters["characters"].items(), counters["clusters"].items()):
         # messages, chars, clusters are a tuple of (<Name>, <Count>)

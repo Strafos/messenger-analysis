@@ -45,13 +45,14 @@ def generater_friends(n=50):
 
 def generate_groupchats():
     """
-    Use find_groupchat() to get groupchats and add to this function
+    Use find_groupchat() to get groupchat paths and hardcode them to this function
     to append them to the end of friends.py
     """
     with open("friends.py", "a") as f:
         name = "situation_room"
         path = "/home/zaibo/code/fb_analysis/data/thesituationroom_69ae5d10b1/message.json"
         write_wrapper(f, name, path)
+
         name = "eggplant"
         path = "/home/zaibo/code/fb_analysis/data/96a68cd96d/message.json"
         write_wrapper(f, name, path)
