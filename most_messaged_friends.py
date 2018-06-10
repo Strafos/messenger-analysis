@@ -6,7 +6,10 @@ from helpers import get_json, check_participants
 from message_analysis import count_messages
 
 def most_messaged_friends(n):
-    # Return n most messaged friends and total number of messages between that friend
+    """
+    Generate friends.py which is used by most of the other scripts
+    friends.py will contain paths to the top n most frequently messaged friends
+    """
     base_dir = "data"
     all_paths = []
     for dir in os.listdir(base_dir):
@@ -18,6 +21,7 @@ def most_messaged_friends(n):
 
     # Each element is a tuple of (friend_name, total_messages)
     messages_per_friend = []
+
     for path in all_paths:
         message_json = get_json(path)
         if check_participants(message_json):

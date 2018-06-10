@@ -14,10 +14,9 @@ from helpers import get_json, check_participants
 
 MY_NAME = "Zaibo Wang"
 
-def main():
+def main(path):
     # for person, path in friends.ALL_FRIENDS:
-    for person, path in friends.ALL_FRIENDS[:1]:
-        path = friends.HORACE_HE
+    for i in range(1):
         message_json = get_json(path)
         if check_participants(message_json):
             messages = message_json.get("messages", [])
@@ -454,12 +453,10 @@ def graph_stat_over_time(data, data_type):
     plt.ylabel('# of %s' % data_type)
     plt.title("%s between %s" % (data_type, " and ".join([i for i in data.keys() if i != "total"])))
 
-def graph(x, y, title, x_axis, y_axis, width=20):
+def bar_graph(x, y, title, x_axis, y_axis, width=20):
     bar = plt.bar(x, y, width=width)
     ax = plt.subplot(111)
     ax.xaxis_date()
-    # plt.grid(True)
-    # plt.ylim(-100)
     plt.legend()
     plt.xlabel(x_axis)
     plt.ylabel(y_axis)
@@ -504,11 +501,11 @@ def total_messages():
     res_list = sorted([(date, count) for date, count in res.items()])
     dates = [elem[0] for elem in res_list[:-1]]
     counts = [elem[1] for elem in res_list[:-1]]
-    graph(dates, counts, "Total Messages Sent by %s per %s" % (MY_NAME, period), "", "Total Messages by %s" % period, width=200)
+    bar_graph(dates, counts, "Total Messages Sent by %s per %s" % (MY_NAME, period), "", "Total Messages by %s" % period, width=200)
 
 if __name__ == "__main__":
     # group_chat_analysis()
-    # main()
-    total_messages()
-    plt.show(block=True)
+    main(friends.HORACE_HE)
     # most_messaged_by_month()
+    # total_messages()
+    plt.show(block=True)
