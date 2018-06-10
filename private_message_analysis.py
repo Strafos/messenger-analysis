@@ -9,7 +9,7 @@ import numpy as np
 from matplotlib.dates import date2num
 
 import friends
-from helpers import get_json, bucket_datetime, time_format
+from helpers import get_json, bucket_datetime, time_format, width_dict
 
 def main(paths=[]):
     for path in paths:
@@ -25,7 +25,7 @@ def main(paths=[]):
         # average_response_time(messages, participant)
         # sanity_check(messages)
         data = get_all_stats(messages)
-    graph_stat(data, stat="Characters", period="Day", name="total")
+        graph_stat(data, stat="Characters", period="Day", name="total")
 
 def datetime_from_mtime(mtime):
     return datetime.datetime.fromtimestamp(mtime)
@@ -110,13 +110,14 @@ def characters_over_time(messages):
         data["total"][m_time] += len(message.get("content", ""))
     return data
 
-def graph_stat(data, stat="Messages", period="Month", name="total"):
+def graph_stat(data, stat="Messages", period="Month", name="total", message_data=None):
     """
     Graph data from get_all_stats
     """
 
     # Parse data and sort by dates
-    message_data = data[stat][period][name]
+    if not message_data:
+        message_data = data[stat][period][name]
     dates = date2num(list(message_data.keys()))
     counts = np.array(list(message_data.values()))
     dates, counts = zip(*sorted(zip(dates, counts)))
@@ -142,7 +143,7 @@ def graph_stat(data, stat="Messages", period="Month", name="total"):
 
 def top_stat(stat="Messages", period="Month"):
     """
-    Print top messaged person per period in table
+    Print top messaged person per period in a table
     """
     res = defaultdict(lambda: ("", 0))
 
@@ -163,34 +164,38 @@ def top_stat(stat="Messages", period="Month"):
     res_list = [[date.strftime(time_format(period)), name, count] for date, name, count in res_list]
     print(tabulate(res_list, headers=[period, "Most %s" % stat, "Count"]))
 
-def total_messages_sent(name, period="Year"):
+def total_stat_sent(stat="Messages", period="Year"):
     """
-    Graph all messages sent by YOU
+    Graph all of a stat sent by YOU
+    Must setup MY_NAME in friends.py
     """
     res = defaultdict(int)
 
     for person, path in friends.ALL_FRIENDS:
         message_json = get_json(path)
-        if check_participants(message_json):
-            messages = message_json.get("messages", [])
-            name = message_json.get("participants")[0]
+        messages = message_json.get("messages", [])
+        name = message_json.get("participants")[0]
 
-            data = messages_over_time(messages, period)
-            message_data = data[friends.MY_NAME]
+        data = get_all_stats(messages)
+        message_data = data[stat][period][friends.MY_NAME]
 
-            for date, count in message_data.items():
-                res[date] += count
+        for date, count in message_data.items():
+            res[date] += count
+
     res_list = sorted([(date, count) for date, count in res.items()])
     dates = [elem[0] for elem in res_list[:-1]]
     counts = [elem[1] for elem in res_list[:-1]]
-    bar_graph(dates, counts, "Total Messages Sent by %s per %s" % (friends.MY_NAME, period), "", "Total Messages by %s" % period, width=200)
+
+    bar = plt.bar(dates, counts, width=width_dict[period])
+    ax = plt.subplot(111)
+    ax.xaxis_date()
+    plt.ylabel('# of %s' % stat)
+    plt.title("Total %s Sent per %s" % (stat, period))
 
 if __name__ == "__main__":
-    top_stat(stat="Messages", period="Year")
+    # top_stat(stat="Messages", period="Year")
     # main([friends.HORACE_HE])
-    # most_messaged_by_month()
-    # total_messages()
-    plt.ion()
+    total_stat_sent(period="Year")
     plt.show(block=True)
 
 # TODO

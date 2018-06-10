@@ -39,3 +39,9 @@ def time_format(period):
         return "%m-%Y"
     elif period == "Year":
         return "%Y"
+
+width_dict = {
+    "Year": 200,
+    "Month": 35,
+    "Day": 8
+}
