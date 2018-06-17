@@ -1,5 +1,6 @@
 import os
 import datetime
+import re
 from pprint import pprint
 from tabulate import tabulate
 from collections import defaultdict
@@ -13,6 +14,7 @@ import friends
 from helpers import get_json, bucket_datetime, time_format, width_dict
 
 def generate_averages(paths=friends.ALL_FRIEND_PATHS):
+    """ Analyze combinations of stats such as "Characters per Words" across all friends in paths"""
     stats = ["Characters", "Words", "Messages", "Clusters"]
     average_stats = []
     for path in paths:
@@ -33,53 +35,6 @@ def generate_averages(paths=friends.ALL_FRIEND_PATHS):
             average_stats.append([sender, *sender_averages])
     average_stats.sort(key=lambda x: x[3], reverse=True)
     print(tabulate(average_stats, headers=["Name", *["%s per %s" % combo for combo in combinations(stats, 2)]]))
-
-def average_spread(paths=friends.ALL_FRIEND_PATHS):
-    paths = paths[:20]
-    stats = ["Characters", "Words", "Messages", "Clusters"]
-    all_spreads = []
-    all_zbo = []
-    for path in paths:
-        message_json = get_json(path)
-        messages = message_json.get("messages", [])
-        participant = message_json.get("participants")[0]
-        data = get_all_stats(messages)
-
-        spreads = []
-        zbo = []
-        for small_stat, big_stat in combinations(stats, 2):
-            me = friends.MY_NAME
-            other = [name for name in data["Characters"]["Month"] if name != "total" and name != friends.MY_NAME][0]
-            sender_averages = (
-                sum(data[small_stat]["Year"][me].values())/sum(data[big_stat]["Year"][me].values()),
-                sum(data[small_stat]["Year"][other].values())/sum(data[big_stat]["Year"][other].values())
-            )
-            # spread = sender_averages[0]/sender_averages[1]
-            zbo.append(sender_averages[0])
-            spread = sender_averages[0]-sender_averages[1]
-            spreads.append(spread)
-        all_spreads.append([other, *spreads])
-        all_zbo.append([*zbo])
-    inspect = 3
-    all_spreads.sort(key=lambda x: x[inspect], reverse=True)
-    # print(tabulate(all_spreads, headers=["Name", *["%s per %s" % combo for combo in combinations(stats, 2)]]))
-    # bar = plt.hist([x[inspect] for x in all_spreads], 8)
-
-    mean_stdev = []
-    combos = ["%s per %s" % x for x in list(combinations(stats, 2))]
-    zbo_stats = []
-    for i in range(1, 7):
-        avg = np.average([x[i] for x in all_spreads])
-        stdev = np.std([x[i] for x in all_spreads])
-        mean_stdev.append([combos[i-1], avg, stdev])
-
-        avg = np.average([x[i-1] for x in all_zbo])
-        stdev = np.std([x[i-1] for x in all_zbo])
-        zbo_stats.append([combos[i-1], avg, stdev])
-        # print("%s avg: %f\tstdev: %f" % (combos[i-1], avg, stdev))
-    print(tabulate(mean_stdev, headers=["Zaibo to other ratio", "Average", "STDEV"]))
-    print("==============================================================")
-    print(tabulate(zbo_stats, headers=["Zaibo stats", "Average", "STDEV"]))
 
 def get_all_stats(messages):
     """
@@ -230,7 +185,7 @@ def total_stat_sent(stat="Messages", period="Year"):
 
 def count_specific_word(messages):
     """
-    TODO normalization by message count
+    Should we normalization by message count per year?
     """
     words = ["crater", "stagger"]
     counters = defaultdict(lambda: defaultdict(int))
@@ -245,25 +200,51 @@ def count_specific_word(messages):
         table.append([keyword, *participants.values()])
     print(tabulate(table, headers=["Word", *participants.keys()]))
 
+def count_links(paths):
+    table = []
+    link_re = 'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+    for path in paths:
+        message_json = get_json(path)
+        messages = message_json.get("messages", [])
+        participant = message_json.get("participants")[0]
+        counters = defaultdict(int)
+
+        for message in messages:
+            sender = message["sender_name"]
+            content = message.get("content", "")
+            num_links = len(re.findall(link_re, content))
+            counters[sender] += num_links
+
+        table.append([
+            participant, 
+            counters[friends.MY_NAME]/counters[participant], 
+            counters[friends.MY_NAME], 
+            counters[participant]])
+    table.sort(key=lambda x: x[1], reverse=True)
+    print(tabulate(table, headers=["Name", "Ratio of Links", "Sent by me", "Sent by other"]))
+    avg = np.average([x[1] for x in table if x[2] > 50])
+    stdev = np.std([x[1] for x in table])
+    print("Average: %f" % avg)
+    print("STDEV: %F" % stdev)
+
 def main(paths=[]):
     for path in paths:
         message_json = get_json(path)
         messages = message_json.get("messages", [])
 
-        data = get_all_stats(messages)
-        graph_stat(data, stat="Characters", period="Month", name="total")
+        # data = get_all_stats(messages)
+        # graph_stat(data, stat="Characters", period="Month", name="total")
 
         # count_specific_word(messages)
         # message_freq(messages, participant)
-        # average_response_time(messages, participant)
 
 if __name__ == "__main__":
     # top_n_stat(3, stat="Characters", period="Month", show_counts=True)
-    # main(friends.ALL_FRIENDS)
+    # main(friends.ALL_FRIEND_PATHS[:20])
+    count_links(friends.ALL_FRIEND_PATHS[:20])
     # main([friends.KATY_VOOR])
     # generate_averages([friends.KATY_VOOR])
     # generate_averages(friends.ALL_FRIEND_PATHS)
-    average_spread()
     
     # total_stat_sent(stat="Characters", period="Year")
     plt.show(block=True)
@@ -273,4 +254,3 @@ if __name__ == "__main__":
 # average message length
 # "enters" per response
 # Average response time
-# number of links sent
