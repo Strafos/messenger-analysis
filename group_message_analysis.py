@@ -98,5 +98,5 @@ def groupchat_message_stats(messages):
     plt.show()
 
 if __name__ == "__main__":
-    path = friends.situation_room
+    path = friends.eggplant
     main(path)

@@ -26,12 +26,60 @@ def generate_averages(paths=friends.ALL_FRIEND_PATHS):
                 continue
             sender_averages = []
             for small_stat, big_stat in combinations(stats, 2):
-                sender_averages.append(sum(data[small_stat]["Year"][sender].values())/sum(data[big_stat]["Year"][sender].values()))
-            if sender == "Zaibo Wang":
-                sender = "Zaibo + %s" % participant
+                sender_averages.append(
+                    sum(data[small_stat]["Year"][sender].values())/sum(data[big_stat]["Year"][sender].values()))
+            if sender == friends.MY_NAME:
+                sender = "%s + %s" % (friends.MY_NAME, participant)
             average_stats.append([sender, *sender_averages])
-    average_stats.sort(key=lambda x: x[2], reverse=True)
+    average_stats.sort(key=lambda x: x[3], reverse=True)
     print(tabulate(average_stats, headers=["Name", *["%s per %s" % combo for combo in combinations(stats, 2)]]))
+
+def average_spread(paths=friends.ALL_FRIEND_PATHS):
+    paths = paths[:20]
+    stats = ["Characters", "Words", "Messages", "Clusters"]
+    all_spreads = []
+    all_zbo = []
+    for path in paths:
+        message_json = get_json(path)
+        messages = message_json.get("messages", [])
+        participant = message_json.get("participants")[0]
+        data = get_all_stats(messages)
+
+        spreads = []
+        zbo = []
+        for small_stat, big_stat in combinations(stats, 2):
+            me = friends.MY_NAME
+            other = [name for name in data["Characters"]["Month"] if name != "total" and name != friends.MY_NAME][0]
+            sender_averages = (
+                sum(data[small_stat]["Year"][me].values())/sum(data[big_stat]["Year"][me].values()),
+                sum(data[small_stat]["Year"][other].values())/sum(data[big_stat]["Year"][other].values())
+            )
+            # spread = sender_averages[0]/sender_averages[1]
+            zbo.append(sender_averages[0])
+            spread = sender_averages[0]-sender_averages[1]
+            spreads.append(spread)
+        all_spreads.append([other, *spreads])
+        all_zbo.append([*zbo])
+    inspect = 3
+    all_spreads.sort(key=lambda x: x[inspect], reverse=True)
+    # print(tabulate(all_spreads, headers=["Name", *["%s per %s" % combo for combo in combinations(stats, 2)]]))
+    # bar = plt.hist([x[inspect] for x in all_spreads], 8)
+
+    mean_stdev = []
+    combos = ["%s per %s" % x for x in list(combinations(stats, 2))]
+    zbo_stats = []
+    for i in range(1, 7):
+        avg = np.average([x[i] for x in all_spreads])
+        stdev = np.std([x[i] for x in all_spreads])
+        mean_stdev.append([combos[i-1], avg, stdev])
+
+        avg = np.average([x[i-1] for x in all_zbo])
+        stdev = np.std([x[i-1] for x in all_zbo])
+        zbo_stats.append([combos[i-1], avg, stdev])
+        # print("%s avg: %f\tstdev: %f" % (combos[i-1], avg, stdev))
+    print(tabulate(mean_stdev, headers=["Zaibo to other ratio", "Average", "STDEV"]))
+    print("==============================================================")
+    print(tabulate(zbo_stats, headers=["Zaibo stats", "Average", "STDEV"]))
 
 def get_all_stats(messages):
     """
@@ -77,7 +125,8 @@ def get_all_stats(messages):
             # Aggregate for messages, characters, clusters, words
             for name in [sender_name, "total"]:
                 data["Characters"][period][name][m_time] += len(content)
-                data["Words"][period][name][m_time] += len(content.split(" "))
+                data["Words"][period][name][m_time] += len([i for i in content.split(" ") if ".com" not in i])
+                # data["Words"][period][name][m_time] += len(content.split(" "))
                 data["Messages"][period][name][m_time] += 1
                 if sender_name != prev_sender:
                     data["Clusters"][period][name][m_time] += 1
@@ -116,7 +165,7 @@ def graph_stat(data, stat="Messages", period="Month", name="total", message_data
     plt.ylabel('# of %s' % stat)
     plt.title("%s between %s per %s" % (stat, " and ".join([i for i in data[stat][period].keys() if i != "total"]), period))
 
-def top_n_stat(n, stat="Messages", period="Month"):
+def top_n_stat(n, stat="Messages", period="Month", show_counts=False):
     """
     Print top n messaged person per period in a table
     """
@@ -140,8 +189,16 @@ def top_n_stat(n, stat="Messages", period="Month"):
         date_str = date.strftime(time_format(period))                     # Format date by period
         count_list.sort(key=lambda x: x[1], reverse=True)                 # Sort by count
         count_list = count_list[:n]                                       # Truncate to top n
-        table.append([date_str, *[name for name, count in count_list]]) # Only names
-        # table.append([date_str, *["%s: %d" % (name, count) for name, count in count_list]]) # Only names and counts
+        if show_counts:
+            name_and_counts = []
+            for name, count in count_list:
+                spaces = 30 - len(name) - len(str(count))
+                spaces_str = " "*spaces
+                s = spaces_str.join([name, str(count)])
+                name_and_counts.append(s)
+            table.append([date_str, *name_and_counts])
+        else:
+            table.append([date_str, *[name for name, count in count_list]])
     print(tabulate(table, headers=[period, *[str(i) for i in range(1, n+1)]]))
 
 def total_stat_sent(stat="Messages", period="Year"):
@@ -201,11 +258,13 @@ def main(paths=[]):
         # average_response_time(messages, participant)
 
 if __name__ == "__main__":
-    top_n_stat(1, stat="Characters", period="Month")
+    # top_n_stat(3, stat="Characters", period="Month", show_counts=True)
     # main(friends.ALL_FRIENDS)
-    # main([friends.JAIDEV_PHADKE])
-    # generate_averages([friends.TIM_FENG])
+    # main([friends.KATY_VOOR])
+    # generate_averages([friends.KATY_VOOR])
     # generate_averages(friends.ALL_FRIEND_PATHS)
+    average_spread()
+    
     # total_stat_sent(stat="Characters", period="Year")
     plt.show(block=True)
 
@@ -214,3 +273,4 @@ if __name__ == "__main__":
 # average message length
 # "enters" per response
 # Average response time
+# number of links sent
