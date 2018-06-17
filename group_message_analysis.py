@@ -6,7 +6,11 @@ import matplotlib.pyplot as plt
 from tabulate import tabulate
 
 from helpers import get_json
+from name_hash import NameHasher
 import friends
+
+ANONYMOUS = True
+nh = NameHasher()
 
 def main(path):
     message_json = get_json(path)
@@ -15,7 +19,7 @@ def main(path):
 
 def groupchat_message_stats(messages):
     """
-    Creates dictionary of counter + cluster + message data of all members of a group chat
+    Creates dictionary of counter + cluster + message + links data of all members of a group chat
     and displays data as table and pie chart
 
     Example
@@ -35,16 +39,14 @@ def groupchat_message_stats(messages):
     }
     """
     link_re = 'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
-    # counters = {
-    #     "characters": {},
-    #     "messages": {},
-    #     "clusters": {},
-    #     "links": {},
-    # }
     counters = defaultdict(lambda: defaultdict(int))
     prev_sender = messages[-1]["sender_name"]
     for message in messages:
         sender = message["sender_name"]
+        
+        if ANONYMOUS:
+            sender = nh.hash_by_name(sender)
+
         content = message.get("content", "")
 
         # Aggregate characters
@@ -68,22 +70,21 @@ def groupchat_message_stats(messages):
     total_messages = sum([v for k, v in counters["messages"].items()])
     total_characters = sum([v for k, v in counters["characters"].items()])
     total_links = sum([v for k, v in counters["links"].items()])
-    print(total_links)
 
     # Assemble data in print_list format to print out as table
     print_list = []
     for messages, chars, clusters, links in zip(counters["messages"].items(), 
-                                         counters["characters"].items(), 
-                                         counters["clusters"].items(),
-                                         counters["links"].items()):
+                                                counters["characters"].items(), 
+                                                counters["clusters"].items(),
+                                                counters["links"].items()):
         # messages, chars, clusters are a tuple of (<Name>, <Count>)
         # Ex: ("Zaibo Wang", 500)
         name = messages[0]
         print_list.append([name, 
-                           float("%.2f" % (chars[1]/total_characters)), 
-                           float("%.2f" % (messages[1]/total_messages)),
-                           float("%.2f" % (clusters[1]/total_clusters)),
-                           float("%.2f" % (links[1]/total_links))])
+                           float("%.3f" % (chars[1]/total_characters)), 
+                           float("%.3f" % (messages[1]/total_messages)),
+                           float("%.3f" % (clusters[1]/total_clusters)),
+                           float("%.3f" % (links[1]/total_links))])
     print_list.sort(key=lambda x: x[1], reverse=True)
     print(tabulate(print_list, headers=["Name", "% characters", "% messages", "% clusters", "% links"]))
 
@@ -95,26 +96,26 @@ def groupchat_message_stats(messages):
     links = [x[4] for x in print_list]
 
     ax1 = plt.subplot(411)
-    ax1.pie(characters, labels=labels, autopct='%1.1f%%',
-            shadow=True, startangle=90)
+    ax1.pie(characters, labels=labels, autopct='%1.2f%%',
+            startangle=90)
     ax1.axis('equal')
     plt.title("Characters", fontsize=20)
 
     ax1 = plt.subplot(412)
-    ax1.pie(clusters, labels=labels, autopct='%1.1f%%',
-            shadow=True, startangle=90)
+    ax1.pie(clusters, labels=labels, autopct='%1.2f%%',
+            startangle=90)
     ax1.axis('equal')
     plt.title("Clusters", fontsize=20)
 
     ax1 = plt.subplot(413)
-    ax1.pie(messages, labels=labels, autopct='%1.1f%%',
-            shadow=True, startangle=90)
+    ax1.pie(messages, labels=labels, autopct='%1.2f%%',
+            startangle=90)
     ax1.axis('equal')
     plt.title("Messages", fontsize=20)
 
     ax1 = plt.subplot(414)
-    ax1.pie(links, labels=labels, autopct='%1.1f%%',
-            shadow=True, startangle=90)
+    ax1.pie(links, labels=labels, autopct='%1.2f%%',
+            startangle=90)
     ax1.axis('equal')
     plt.title("Links", fontsize=20)
 

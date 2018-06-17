@@ -7,13 +7,36 @@ from helpers import get_json, count_messages, check_participants
 BASE_DIR = "/home/zaibo/code/fb_analysis/data"
 MY_NAME = "Zaibo Wang"
 
-# To look at groupchats, use find_groupchat() by adding your conditions to narrow down the search
+# To look at groupchats, use find_groupchat() in setup.py 
+# by adding your conditions to narrow down the search
 # Then, add them to the GROUPCHATS list
 GROUPCHATS = [
     # (name, path)
+    # This will create a line in friends.py
+    # name = path
     ("situation_room", "/home/zaibo/code/fb_analysis/data/thesituationroom_69ae5d10b1/message.json"),
     ("eggplant", "/home/zaibo/code/fb_analysis/data/96a68cd96d/message.json")
 ]
+
+def find_groupchat():
+    """
+    generate will not generate group chats, so we must find them manually
+    We can set up conditions to narrow down the chats (ex: find all groupchats with 15+ people)
+    """
+    all_paths = []
+    for dir in os.listdir(BASE_DIR):
+        inner_dir = BASE_DIR + "/" + dir
+        for filename in os.listdir(inner_dir):
+            if filename == "message.json":
+                filepath = inner_dir + "/" + filename
+                all_paths.append(filepath)
+
+    for path in all_paths:
+        message_json = get_json(path)
+        party = message_json.get("participants", "")
+        # Make some condition to look for group chats
+        if len(party) > 15:
+            print(path)
 
 def generate_friends(n=50):
     """
@@ -70,26 +93,6 @@ def generate_groupchats():
     with open("friends.py", "a") as f:
         for name, path in GROUPCHATS:
             write_wrapper(f, name, path)
-
-def find_groupchat():
-    """
-    generate will not generate group chats, so we must find them manually
-    We can set up conditions to narrow down the chats (ex: find all groupchats with 15+ people)
-    """
-    all_paths = []
-    for dir in os.listdir(BASE_DIR):
-        inner_dir = BASE_DIR + "/" + dir
-        for filename in os.listdir(inner_dir):
-            if filename == "message.json":
-                filepath = inner_dir + "/" + filename
-                all_paths.append(filepath)
-
-    for path in all_paths:
-        message_json = get_json(path)
-        party = message_json.get("participants", "")
-        # Make some condition to look for group chats
-        if len(party) > 15:
-            print(path)
 
 def generate_name():
     with open("friends.py", "a") as f:

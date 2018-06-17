@@ -263,15 +263,9 @@ if __name__ == "__main__":
     top_n_stat(3, stat="Characters", period="Month", show_counts=True)
     # main(friends.ALL_FRIEND_PATHS[:20])
     # count_links(friends.ALL_FRIEND_PATHS[:20])
-    # main([friends.KATY_VOOR])
-    # generate_averages([friends.KATY_VOOR])
+    # main([friends.JAIDEV_PHADKE])
+    # generate_averages([friends.JAIDEV_PHADKE])
     # generate_averages(friends.ALL_FRIEND_PATHS)
-    
     # total_stat_sent(stat="Characters", period="Year")
-    plt.show(block=True)
 
-# TODO
-# longest dry spell
-# average message length
-# "enters" per response
-# Average response time
+    plt.show(block=True)

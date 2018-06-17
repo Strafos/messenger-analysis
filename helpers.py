@@ -61,7 +61,6 @@ def message_dump(messages, period="Month"):
             with open("message_dump.txt", 'a') as f:
                 f.write(participant + ": " + message.get("content", "") + "\n")
 
-
 width_dict = {
     "Year": 200,
     "Month": 35,
