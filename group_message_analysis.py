@@ -1,4 +1,6 @@
 import os
+import re
+from collections import defaultdict
 
 import matplotlib.pyplot as plt
 from tabulate import tabulate
@@ -32,17 +34,21 @@ def groupchat_message_stats(messages):
         }
     }
     """
-    counters = {
-        "characters": {},
-        "messages": {},
-        "clusters": {}
-    }
+    link_re = 'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+    # counters = {
+    #     "characters": {},
+    #     "messages": {},
+    #     "clusters": {},
+    #     "links": {},
+    # }
+    counters = defaultdict(lambda: defaultdict(int))
     prev_sender = messages[-1]["sender_name"]
     for message in messages:
         sender = message["sender_name"]
-        chars = len(message.get("content", ""))
+        content = message.get("content", "")
 
         # Aggregate characters
+        chars = len(content)
         counters["characters"][sender] = chars if not counters["characters"].get(sender) else counters["characters"].get(sender) + chars
 
         # Aggregate messages
@@ -52,51 +58,69 @@ def groupchat_message_stats(messages):
         if sender != prev_sender:
             counters["clusters"][sender] = 1 if not counters["clusters"].get(sender) else counters["clusters"].get(sender) + 1
 
+        # Aggregate links
+        num_links = len(re.findall(link_re, content))
+        counters["links"][sender] += num_links
+
         prev_sender = sender
 
     total_clusters = sum([v for k, v in counters["clusters"].items()])
     total_messages = sum([v for k, v in counters["messages"].items()])
     total_characters = sum([v for k, v in counters["characters"].items()])
+    total_links = sum([v for k, v in counters["links"].items()])
+    print(total_links)
 
     # Assemble data in print_list format to print out as table
     print_list = []
-    for messages, chars, clusters in zip(counters["messages"].items(), counters["characters"].items(), counters["clusters"].items()):
+    for messages, chars, clusters, links in zip(counters["messages"].items(), 
+                                         counters["characters"].items(), 
+                                         counters["clusters"].items(),
+                                         counters["links"].items()):
         # messages, chars, clusters are a tuple of (<Name>, <Count>)
         # Ex: ("Zaibo Wang", 500)
         name = messages[0]
         print_list.append([name, 
                            float("%.2f" % (chars[1]/total_characters)), 
                            float("%.2f" % (messages[1]/total_messages)),
-                           float("%.2f" % (clusters[1]/total_clusters))])
+                           float("%.2f" % (clusters[1]/total_clusters)),
+                           float("%.2f" % (links[1]/total_links))])
     print_list.sort(key=lambda x: x[1], reverse=True)
-    print(tabulate(print_list, headers=["Name", "% characters", "% messages", "% clusters"]))
+    print(tabulate(print_list, headers=["Name", "% characters", "% messages", "% clusters", "% links"]))
 
     # Generate pie charts
     labels = [x[0] for x in print_list]
     characters = [x[1] for x in print_list]
     messages = [x[2] for x in print_list]
     clusters = [x[3] for x in print_list]
+    links = [x[4] for x in print_list]
 
-    ax1 = plt.subplot(311)
+    ax1 = plt.subplot(411)
     ax1.pie(characters, labels=labels, autopct='%1.1f%%',
             shadow=True, startangle=90)
     ax1.axis('equal')
-    plt.title("Characters")
+    plt.title("Characters", fontsize=20)
 
-    ax1 = plt.subplot(312)
+    ax1 = plt.subplot(412)
     ax1.pie(clusters, labels=labels, autopct='%1.1f%%',
             shadow=True, startangle=90)
     ax1.axis('equal')
-    plt.title("Clusters")
+    plt.title("Clusters", fontsize=20)
 
-    ax1 = plt.subplot(313)
+    ax1 = plt.subplot(413)
     ax1.pie(messages, labels=labels, autopct='%1.1f%%',
             shadow=True, startangle=90)
     ax1.axis('equal')
-    plt.title("Messages")
+    plt.title("Messages", fontsize=20)
+
+    ax1 = plt.subplot(414)
+    ax1.pie(links, labels=labels, autopct='%1.1f%%',
+            shadow=True, startangle=90)
+    ax1.axis('equal')
+    plt.title("Links", fontsize=20)
 
     plt.show()
 
 if __name__ == "__main__":
-    path = friends.eggplant
+    path = friends.situation_room
+    # path = friends.eggplant
     main(path)
