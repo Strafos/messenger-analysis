@@ -11,7 +11,11 @@ import numpy as np
 from matplotlib.dates import date2num
 
 import friends
+from name_hash import NameHasher
 from helpers import get_json, bucket_datetime, time_format, width_dict
+
+nh = NameHasher()
+ANONYMOUS = True # We can make the data anonymous by hashing all the names except our own
 
 def generate_averages(paths=friends.ALL_FRIEND_PATHS):
     """ Analyze combinations of stats such as "Characters per Words" across all friends in paths"""
@@ -31,9 +35,17 @@ def generate_averages(paths=friends.ALL_FRIEND_PATHS):
                 sender_averages.append(
                     sum(data[small_stat]["Year"][sender].values())/sum(data[big_stat]["Year"][sender].values()))
             if sender == friends.MY_NAME:
-                sender = "%s + %s" % (friends.MY_NAME, participant)
+                if ANONYMOUS:
+                    sender = "%s + %s" % (friends.MY_NAME, nh.hash_by_name(participant))
+                else:
+                    sender = "%s + %s" % (friends.MY_NAME, participant)
             average_stats.append([sender, *sender_averages])
     average_stats.sort(key=lambda x: x[3], reverse=True)
+
+    if ANONYMOUS:
+        for row in average_stats:
+            row[0] = nh.hash_by_name(row[0])
+
     print(tabulate(average_stats, headers=["Name", *["%s per %s" % combo for combo in combinations(stats, 2)]]))
 
 def get_all_stats(messages):
@@ -131,6 +143,9 @@ def top_n_stat(n, stat="Messages", period="Month", show_counts=False):
         messages = message_json.get("messages", [])
         name = message_json.get("participants")[0]
 
+        if ANONYMOUS:
+            name = nh.hash_by_name(name)
+
         message_data = get_all_stats(messages)[stat][period]["total"]
 
         for date, count in message_data.items():
@@ -154,6 +169,7 @@ def top_n_stat(n, stat="Messages", period="Month", show_counts=False):
             table.append([date_str, *name_and_counts])
         else:
             table.append([date_str, *[name for name, count in count_list]])
+    print("Top %d Most %s per %s" % (n, stat, period))
     print(tabulate(table, headers=[period, *[str(i) for i in range(1, n+1)]]))
 
 def total_stat_sent(stat="Messages", period="Year"):
@@ -221,11 +237,16 @@ def count_links(paths):
             counters[friends.MY_NAME], 
             counters[participant]])
     table.sort(key=lambda x: x[1], reverse=True)
+
+    if ANONYMOUS:
+        for row in table:
+            row[0] = nh.hash_by_name(row[0])
+
     print(tabulate(table, headers=["Name", "Ratio of Links", "Sent by me", "Sent by other"]))
     avg = np.average([x[1] for x in table if x[2] > 50])
     stdev = np.std([x[1] for x in table])
-    print("Average: %f" % avg)
-    print("STDEV: %F" % stdev)
+    print("Average Ratio: %f" % avg)
+    print("Ratio STDEV: %F" % stdev)
 
 def main(paths=[]):
     for path in paths:
@@ -239,9 +260,9 @@ def main(paths=[]):
         # message_freq(messages, participant)
 
 if __name__ == "__main__":
-    # top_n_stat(3, stat="Characters", period="Month", show_counts=True)
+    top_n_stat(3, stat="Characters", period="Month", show_counts=True)
     # main(friends.ALL_FRIEND_PATHS[:20])
-    count_links(friends.ALL_FRIEND_PATHS[:20])
+    # count_links(friends.ALL_FRIEND_PATHS[:20])
     # main([friends.KATY_VOOR])
     # generate_averages([friends.KATY_VOOR])
     # generate_averages(friends.ALL_FRIEND_PATHS)
