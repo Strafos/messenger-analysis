@@ -66,9 +66,15 @@ def generate_friends(n=50):
                 messages_per_friend.append((participant, total_messages, path))
     messages_per_friend.sort(key=lambda x: x[1], reverse=True)
 
+
     # People have weird names, this regex can break...
     name_pattern = "(?P<first_name>([A-Z]|-)*) (?P<last_name>([A-Z]|-)*)"
     with open("friends.py", "w") as f:
+        # Create a "BEST_FRIEND" which will be the default path
+        # BEST_FRIEND is the most messaged friend
+        _, _, path = messages_per_friend[0]
+        write_wrapper(f, "BEST_FRIEND", path)
+
         names_and_paths = []
         paths = []
         for name, _, path in messages_per_friend[:n]:
@@ -79,7 +85,9 @@ def generate_friends(n=50):
             parsed_name = "_".join([regex.group("first_name"), regex.group("last_name")])
             parsed_name = parsed_name.replace(" ", "_")
             parsed_name = parsed_name.replace("-", "_")
+
             write_wrapper(f, parsed_name, path)
+
             names_and_paths.append((name, path))
             paths.append(path)
         f.write("ALL_FRIENDS = %s\n" % str(names_and_paths))

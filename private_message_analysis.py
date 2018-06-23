@@ -99,8 +99,16 @@ def get_all_stats(messages):
         prev_sender = sender_name
     return data
 
-def graph_stat(data, stat="Messages", period="Month", name="total", message_data=None):
+def graph_stat(path=friends.BEST_FRIEND, stat="Messages", period="Year"):
+    message_json = get_json(path)
+    messages = message_json.get("messages", [])
+
+    data = get_all_stats(messages)
+    _graph_stat(data, stat=stat, period=period)
+
+def _graph_stat(data, stat="Messages", period="Month", name="total", message_data=None):
     """
+    The real graph stat function
     Graph parameterized stat from get_all_stats
     """
 
@@ -130,9 +138,9 @@ def graph_stat(data, stat="Messages", period="Month", name="total", message_data
     plt.ylabel('# of %s' % stat)
     plt.title("%s between %s per %s" % (stat, " and ".join([i for i in data[stat][period].keys() if i != "total"]), period))
 
-def top_n_stat(n, stat="Messages", period="Month", show_counts=False):
+def top_n_stat(n=3, stat="Messages", period="Month", show_counts=False):
     """
-    Print top n messaged person per period in a table
+    Print top n stat'd person per period in a table
     """
     res = defaultdict(list)
 
@@ -216,13 +224,18 @@ def total_stat_sent(stat="Messages", period="Year"):
     plt.ylabel('# of %s' % stat)
     plt.title("Total %s Sent %s per %s" % (stat, friends.MY_NAME, period))
 
-def count_specific_word(messages):
+def count_specific_word(path=friends.BEST_FRIEND):
     """
+    Count frequency of WORDS between people in paths
     Should we normalization by message count per year?
     """
-    words = ["lol", "lool", "loool", "lmao", "haha", "hahaha", "hahahaha"]
+    WORDS = ["lol", "lool", "loool", "lmao", "haha", "hahaha", "hahahaha"]
     counters = defaultdict(lambda: defaultdict(int))
-    for keyword in words:
+
+    message_json = get_json(path)
+    messages = message_json.get("messages", [])
+
+    for keyword in WORDS:
         for message in messages:
             sender = message["sender_name"]
             if ANONYMOUS and sender != friends.MY_NAME:
@@ -235,7 +248,10 @@ def count_specific_word(messages):
         table.append([keyword, *participants.values()])
     print(tabulate(table, headers=["Word", *participants.keys()]))
 
-def count_links(paths):
+def count_links(paths=friends.ALL_FRIEND_PATHS[:20]):
+    """
+    Count links sent between friends
+    """
     table = []
     link_re = 'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
     for path in paths:
@@ -254,39 +270,30 @@ def count_links(paths):
             participant, 
             counters[friends.MY_NAME]/counters[participant], 
             counters[friends.MY_NAME], 
-            counters[participant]])
+            counters[participant],
+            counters[friends.MY_NAME] + counters[participant]])
     table.sort(key=lambda x: x[1], reverse=True)
 
     if ANONYMOUS:
         for row in table:
             row[0] = nh.hash_by_name(row[0])
 
-    print(tabulate(table, headers=["Name", "Ratio of Links", "Sent by me", "Sent by other"]))
+    print(tabulate(table, headers=["Name", "Ratio of Links", "Sent by me", "Sent by other", "Total"]))
     avg = np.average([x[1] for x in table if x[2] > 50])
     stdev = np.std([x[1] for x in table])
     print("Average Ratio: %f" % avg)
     print("Ratio STDEV: %F" % stdev)
-
-def main(paths=[]):
-    for path in paths:
-        message_json = get_json(path)
-        messages = message_json.get("messages", [])
-
-        data = get_all_stats(messages)
-        # graph_stat(data, stat="Messages", period="Year", name="total")
-
-        # count_specific_word(messages)
 
 if __name__ == "__main__":
     """
     supported periods: "Month", "Year", "Day"
     supported stats: "Characters", "Words", Messages", "Clusters"
     """
-    # top_n_stat(4, stat="Characters", period="Month", show_counts=True)
-    # main(friends.ALL_FRIEND_PATHS[:20])
+    # top_n_stat(n=4, stat="Characters", period="Month", show_counts=True)
     # count_links(friends.ALL_FRIEND_PATHS[:20])
-    # main([friends.JAIDEV_PHADKE])
     # generate_averages(friends.ALL_FRIEND_PATHS)
-    total_stat_sent(stat="Characters", period="Year")
+    graph_stat(friends.BEST_FRIEND, stat="Messages", period="Year")
+    count_specific_word(friends.BEST_FRIEND)
+    # total_stat_sent(stat="Characters", period="Year")
 
     plt.show(block=True)
