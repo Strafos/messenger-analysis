@@ -42,10 +42,6 @@ def generate_averages(paths=friends.ALL_FRIEND_PATHS):
             average_stats.append([sender, *sender_averages])
     average_stats.sort(key=lambda x: x[3], reverse=True)
 
-    if ANONYMOUS:
-        for row in average_stats:
-            row[0] = nh.hash_by_name(row[0])
-
     print(tabulate(average_stats, headers=["Name", *["%s per %s" % combo for combo in combinations(stats, 2)]]))
 
 def get_all_stats(messages):
@@ -84,6 +80,8 @@ def get_all_stats(messages):
     for message in reversed(messages):
         timestamp = datetime.datetime.fromtimestamp(message["timestamp"])
         sender_name = message["sender_name"]
+        if ANONYMOUS and sender_name != friends.MY_NAME:
+            sender_name = nh.hash_by_name(sender_name)
         content = message.get("content", "")
 
         for period in periods:
@@ -154,8 +152,8 @@ def top_n_stat(n, stat="Messages", period="Month", show_counts=False):
     # We want to sort by date
     res_list = sorted([[date, count_list] for date, count_list in res.items()])
 
-    table = []
-    for date, count_list in res_list[30:]:
+    table_data = []
+    for date, count_list in res_list[-20:]:
         date_str = date.strftime(time_format(period))                     # Format date by period
         count_list.sort(key=lambda x: x[1], reverse=True)                 # Sort by count
         count_list = count_list[:n]                                       # Truncate to top n
@@ -166,11 +164,30 @@ def top_n_stat(n, stat="Messages", period="Month", show_counts=False):
                 spaces_str = " "*spaces
                 s = spaces_str.join([name, str(count)])
                 name_and_counts.append(s)
-            table.append([date_str, *name_and_counts])
+            table_data.append([date_str, *name_and_counts])
         else:
-            table.append([date_str, *[name for name, count in count_list]])
+            table_data.append([date_str, *[name for name, count in count_list]])
     print("Top %d Most %s per %s" % (n, stat, period))
-    print(tabulate(table, headers=[period, *[str(i) for i in range(1, n+1)]]))
+    print(tabulate(table_data, headers=[period, *["#%d" % i for i in range(1, n+1)]]))
+
+    # Attempt to use matplotlib for tables... ASCII seems better
+    # fig, ax = plt.subplots() 
+    # fig.patch.set_visible(False)
+    # ax.axis('off')
+    # ax.axis('tight')
+    # col_labels = ["Month", *["#%d" % i for i in range(1, n+1)]]
+    # table = plt.table(cellText=table_data, colWidths=[0.1] * (n+1), loc='center', colLabels=col_labels)
+
+    # # Center the month column
+    # cells = table.properties()["celld"]
+    # for i in range(len(cells)//(n+1)):
+    #     cells[i, 0]._loc = 'center'
+    # # Format table
+    # table.set_fontsize(24)
+    # table.scale(1.3, 1.1)
+
+    # plt.title("Top %d %s Sent by per %s" % (n, stat, period))
+
 
 def total_stat_sent(stat="Messages", period="Year"):
     """
@@ -197,17 +214,19 @@ def total_stat_sent(stat="Messages", period="Year"):
     ax = plt.subplot(111)
     ax.xaxis_date()
     plt.ylabel('# of %s' % stat)
-    plt.title("Total %s Sent by %s per %s" % (stat, friends.MY_NAME, period))
+    plt.title("Total %s Sent %s per %s" % (stat, friends.MY_NAME, period))
 
 def count_specific_word(messages):
     """
     Should we normalization by message count per year?
     """
-    words = ["crater", "stagger"]
+    words = ["lol", "lool", "loool", "lmao", "haha", "hahaha", "hahahaha"]
     counters = defaultdict(lambda: defaultdict(int))
     for keyword in words:
         for message in messages:
             sender = message["sender_name"]
+            if ANONYMOUS and sender != friends.MY_NAME:
+                sender = nh.hash_by_name(sender)
             content = message.get("content", "")
             count = content.lower().count(keyword)
             counters[keyword][sender] += count
@@ -253,19 +272,21 @@ def main(paths=[]):
         message_json = get_json(path)
         messages = message_json.get("messages", [])
 
-        # data = get_all_stats(messages)
-        # graph_stat(data, stat="Characters", period="Month", name="total")
+        data = get_all_stats(messages)
+        # graph_stat(data, stat="Messages", period="Year", name="total")
 
         # count_specific_word(messages)
-        # message_freq(messages, participant)
 
 if __name__ == "__main__":
-    top_n_stat(3, stat="Characters", period="Month", show_counts=True)
+    """
+    supported periods: "Month", "Year", "Day"
+    supported stats: "Characters", "Words", Messages", "Clusters"
+    """
+    # top_n_stat(4, stat="Characters", period="Month", show_counts=True)
     # main(friends.ALL_FRIEND_PATHS[:20])
     # count_links(friends.ALL_FRIEND_PATHS[:20])
     # main([friends.JAIDEV_PHADKE])
-    # generate_averages([friends.JAIDEV_PHADKE])
     # generate_averages(friends.ALL_FRIEND_PATHS)
-    # total_stat_sent(stat="Characters", period="Year")
+    total_stat_sent(stat="Characters", period="Year")
 
     plt.show(block=True)
