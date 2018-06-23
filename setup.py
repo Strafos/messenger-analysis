@@ -4,6 +4,11 @@ from pprint import pprint
 
 from helpers import get_json, count_messages, check_participants
 
+"""
+This file generates friends.py which is needed for all data analysis
+"""
+
+# Change these variables
 BASE_DIR = "/home/zaibo/code/fb_analysis/data"
 MY_NAME = "Zaibo Wang"
 
@@ -11,8 +16,7 @@ MY_NAME = "Zaibo Wang"
 # by adding your conditions to narrow down the search
 # Then, add them to the GROUPCHATS list
 GROUPCHATS = [
-    # (name, path)
-    # This will create a line in friends.py
+    # This will create a line in friends.py:
     # name = path
     ("situation_room", "/home/zaibo/code/fb_analysis/data/thesituationroom_69ae5d10b1/message.json"),
     ("eggplant", "/home/zaibo/code/fb_analysis/data/96a68cd96d/message.json")

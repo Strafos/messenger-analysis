@@ -179,6 +179,7 @@ def top_n_stat(n=3, stat="Messages", period="Month", show_counts=False):
     print(tabulate(table_data, headers=[period, *["#%d" % i for i in range(1, n+1)]]))
 
     # Attempt to use matplotlib for tables... ASCII seems better
+    # TODO better table?
     # fig, ax = plt.subplots() 
     # fig.patch.set_visible(False)
     # ax.axis('off')
@@ -287,13 +288,18 @@ def count_links(paths=friends.ALL_FRIEND_PATHS[:20]):
 if __name__ == "__main__":
     """
     supported periods: "Month", "Year", "Day"
-    supported stats: "Characters", "Words", Messages", "Clusters"
+
+    Supported stats:
+    "Characters": total characters
+    "Messages": total times enter is pressed
+    "Clusters": all messages sent before being interupted by other participant is one cluster
+    "Words": Naively defined as length of space separated message
     """
     # top_n_stat(n=4, stat="Characters", period="Month", show_counts=True)
     # count_links(friends.ALL_FRIEND_PATHS[:20])
     # generate_averages(friends.ALL_FRIEND_PATHS)
-    graph_stat(friends.BEST_FRIEND, stat="Messages", period="Year")
-    count_specific_word(friends.BEST_FRIEND)
+    # graph_stat(friends.BEST_FRIEND, stat="Messages", period="Year")
+    # count_specific_word(friends.BEST_FRIEND)
     # total_stat_sent(stat="Characters", period="Year")
 
     plt.show(block=True)
