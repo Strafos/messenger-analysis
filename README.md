@@ -60,24 +60,31 @@ All friends were initialized in `friends.py`. To access a friend in `private_mes
 Note that I created a name hash to anonymize the example outputs.
 ---
 `graph_stat` will create a bar graph of a given stat over a period. Default graphs Messages per Year between you and your best friend (most messaged friend).
+
+![graph_messages](https://i.imgur.com/B6yaCSU.png)
+![graph_characters](https://i.imgur.com/Qo9s2TY.png)
 --- 
 `n_top_stat` shows the top n people of a certain stat by the period. By default, it is set to the top 4 characters per month (I think this statistic is the most interesting)
 
-![n_top_stat](https://imgur.com/a/xbmEuSa)
+![n_top_stat](https://i.imgur.com/YHSfP6I.png)
 ---
 `count_links` gives an absolute count and ratio of links sent to/received from a person. By default, it only calculates this for the top 20 most messaged friends (I find that after 20, there are few links and the data is not useful)
 
-![count_links](https://imgur.com/a/xzn2rPP)
+![count_links](https://i.imgur.com/nzQvhG4.png)
 
 ---
 `generate_averages` takes combinations of aforementioned stats (such as Characters per Message) and calculates the average per person over all (top 50) friends. 
 
-![generate_averages](https://imgur.com/a/1ehkI50)
+![generate_averages](https://i.imgur.com/NJ2OPnt.png)
 
 ---
 
 `count_specific_words` takes an array of words and a friend to compare word frequency.
 
-![count_specific_words](https://imgur.com/a/vF653h8)
+![count_specific_words](https://i.imgur.com/NoZHPsQ.png)
 ---
 `total_stat_sent` shows how many of a certain stat you have sent over a period. Default is total Characters per Year.
+
+![total_stat_send](https://i.imgur.com/vt9MYvF.png)
+
+### Group Messages
