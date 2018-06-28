@@ -13,10 +13,9 @@ This file generates friends.py which is needed for all data analysis
 # by adding your conditions to narrow down the search
 # Then, add them to the GROUPCHATS list
 GROUPCHATS = [
-    # This will create a line in friends.py:
-    # name = path
-    ("situation_room", "/home/zaibo/code/fb_analysis/data/thesituationroom_69ae5d10b1/message.json"),
-    ("eggplant", "/home/zaibo/code/fb_analysis/data/96a68cd96d/message.json")
+    # Format is a tuple (name, path):
+    # ("situation_room", "/home/zaibo/code/fb_analysis/data/thesituationroom_69ae5d10b1/message.json"),
+    # ("eggplant", "/home/zaibo/code/fb_analysis/data/96a68cd96d/message.json")
 ]
 
 def find_groupchat():
@@ -35,7 +34,7 @@ def find_groupchat():
     for path in all_paths:
         message_json = get_json(path)
         party = message_json.get("participants", "")
-        # Make some condition to look for group chats
+        # Make some condition to look for group chats, this one is 15+ participants
         if len(party) > 15:
             print(path)
 

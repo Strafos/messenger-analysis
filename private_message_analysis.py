@@ -15,7 +15,7 @@ from name_hash import NameHasher
 from helpers import get_json, bucket_datetime, time_format, width_dict
 
 nh = NameHasher()
-ANONYMOUS = True # We can make the data anonymous by hashing all the names except our own
+ANONYMOUS = False # We can make the data anonymous by hashing all the names except our own
 
 def generate_averages(paths=friends.ALL_FRIEND_PATHS):
     """ Analyze combinations of stats such as "Characters per Words" across all friends in paths"""
@@ -100,6 +100,9 @@ def get_all_stats(messages):
     return data
 
 def graph_stat(path=friends.BEST_FRIEND, stat="Messages", period="Year"):
+    """
+    graph_stat wrapper that parses from a path
+    """
     message_json = get_json(path)
     messages = message_json.get("messages", [])
 
@@ -225,12 +228,11 @@ def total_stat_sent(stat="Messages", period="Year"):
     plt.ylabel('# of %s' % stat)
     plt.title("Total %s Sent %s per %s" % (stat, friends.MY_NAME, period))
 
-def count_specific_word(path=friends.BEST_FRIEND):
+def count_specific_words(WORDS, path=friends.BEST_FRIEND):
     """
     Count frequency of WORDS between people in paths
     Should we normalization by message count per year?
     """
-    WORDS = ["lol", "lool", "loool", "lmao", "haha", "hahaha", "hahahaha"]
     counters = defaultdict(lambda: defaultdict(int))
 
     message_json = get_json(path)
@@ -295,11 +297,12 @@ if __name__ == "__main__":
     "Clusters": all messages sent before being interupted by other participant is one cluster
     "Words": Naively defined as length of space separated message
     """
+    # graph_stat(friends.BEST_FRIEND, stat="Messages", period="Year")
     # top_n_stat(n=4, stat="Characters", period="Month", show_counts=True)
     # count_links(friends.ALL_FRIEND_PATHS[:20])
     # generate_averages(friends.ALL_FRIEND_PATHS)
-    # graph_stat(friends.BEST_FRIEND, stat="Messages", period="Year")
-    # count_specific_word(friends.BEST_FRIEND)
+    # words = ["lol", "lool", "loool", "lmao", "haha", "hahaha", "hahahaha"]
+    # count_specific_words(words, friends.BEST_FRIEND)
     # total_stat_sent(stat="Characters", period="Year")
 
     plt.show(block=True)
