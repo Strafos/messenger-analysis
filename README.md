@@ -57,7 +57,8 @@ The supported time periods are Year, Month, Day
 
 All friends were initialized in `friends.py`. To access a friend in `private_message_analysis.py`, use the variable `friends.JOHN_SMITH`
 
-Note that I created a name hash to anonymize the example outputs.
+I used a name hash in the following example outputs so they don't use friends' real names
+
 ---
 `graph_stat` will create a bar graph of a given stat over a period. Default graphs Messages per Year between you and your best friend (most messaged friend).
 
@@ -88,3 +89,9 @@ Note that I created a name hash to anonymize the example outputs.
 ![total_stat_send](https://i.imgur.com/vt9MYvF.png)
 
 ### Group Messages
+`group_message_analysis.py` has the code to analyze group messages. It is a little tricker to set up. The easiest way to run is to pass a path to a group message.json to the main method in `group_message_analysis.py`.
+
+I found some difficulty in finding group messages within my message dump so another way to do it is to use `find_groupchat()` in `setup.py`. This lets me specify a condition such as all groupchats with more than 15 participants. Then I add them to the GROUPCHAT variable in `setup.py` which will generate groupchats in `friends.py`. Then, these paths can be passed into the main method by `friends.${chat_name}`.
+
+Result:
+![group_chat](https://i.imgur.com/xzLZC60.png)
