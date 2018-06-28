@@ -1,5 +1,6 @@
 import os
 import re
+import argparse
 from pprint import pprint
 
 from helpers import get_json, count_messages, check_participants
@@ -7,10 +8,6 @@ from helpers import get_json, count_messages, check_participants
 """
 This file generates friends.py which is needed for all data analysis
 """
-
-# Change these variables
-BASE_DIR = "/home/zaibo/code/fb_analysis/data"
-MY_NAME = "Zaibo Wang"
 
 # To look at groupchats, use find_groupchat() in setup.py 
 # by adding your conditions to narrow down the search
@@ -28,8 +25,8 @@ def find_groupchat():
     We can set up conditions to narrow down the chats (ex: find all groupchats with 15+ people)
     """
     all_paths = []
-    for dir in os.listdir(BASE_DIR):
-        inner_dir = BASE_DIR + "/" + dir
+    for dir in os.listdir(base_dir):
+        inner_dir = base_dir + "/" + dir
         for filename in os.listdir(inner_dir):
             if filename == "message.json":
                 filepath = inner_dir + "/" + filename
@@ -48,10 +45,10 @@ def generate_friends(n=50):
     friends.py will contain paths to the top n most frequently messaged friends
     """
     all_paths = []
-    for dir in os.listdir(BASE_DIR):
+    for dir in os.listdir(base_dir):
         if dir.startswith("."): # Macs have a .DS_STORE file which throws an exception
             continue
-        inner_dir = BASE_DIR + "/" + dir
+        inner_dir = base_dir + "/" + dir
         for filename in os.listdir(inner_dir):
             if filename == "message.json":
                 filepath = inner_dir + "/" + filename
@@ -86,9 +83,9 @@ def generate_friends(n=50):
             regex = re.match(name_pattern, name)
             if not regex:
                 continue
+            # Some people have weird names, I did not handle edge cases
             parsed_name = "_".join([regex.group("first_name"), regex.group("last_name")])
-            parsed_name = parsed_name.replace(" ", "_")
-            parsed_name = parsed_name.replace("-", "_")
+            parsed_name = parsed_name.replace(" ", "_").replace("-", "_") 
 
             write_wrapper(f, parsed_name, path)
 
@@ -108,11 +105,20 @@ def generate_groupchats():
 
 def generate_name():
     with open("friends.py", "a") as f:
-        write_wrapper(f, "MY_NAME", MY_NAME)
+        write_wrapper(f, "MY_NAME", my_name)
 
 def write_wrapper(f, variable, value):
     f.write("%s = \"%s\"\n" % (variable, value))
 
-generate_friends(50)
-generate_groupchats()
-generate_name()
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Configs for setting up data source')
+    parser.add_argument('--dir', help="Path to unzipped messages directory" ,required=True)
+    parser.add_argument('--name', help="Your name in the format 'John Smith'", required=True)
+    args = parser.parse_args()
+
+    base_dir = args.dir
+    my_name = args.name
+
+    generate_friends(50)
+    generate_groupchats()
+    generate_name()
