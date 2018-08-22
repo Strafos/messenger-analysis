@@ -15,7 +15,8 @@ from name_hash import NameHasher
 from helpers import get_json, bucket_datetime, time_format, width_dict
 
 nh = NameHasher()
-ANONYMOUS = False # We can make the data anonymous by hashing all the names except our own
+ANONYMOUS = False  # We can make the data anonymous by hashing all the names except our own
+
 
 def generate_averages(paths=friends.ALL_FRIEND_PATHS):
     """ Analyze combinations of stats such as "Characters per Words" across all friends in paths"""
@@ -36,13 +37,16 @@ def generate_averages(paths=friends.ALL_FRIEND_PATHS):
                     sum(data[small_stat]["Year"][sender].values())/sum(data[big_stat]["Year"][sender].values()))
             if sender == friends.MY_NAME:
                 if ANONYMOUS:
-                    sender = "%s + %s" % (friends.MY_NAME, nh.hash_by_name(participant))
+                    sender = "%s + %s" % (friends.MY_NAME,
+                                          nh.hash_by_name(participant))
                 else:
                     sender = "%s + %s" % (friends.MY_NAME, participant)
             average_stats.append([sender, *sender_averages])
     average_stats.sort(key=lambda x: x[3], reverse=True)
 
-    print(tabulate(average_stats, headers=["Name", *["%s per %s" % combo for combo in combinations(stats, 2)]]))
+    print(tabulate(average_stats, headers=[
+          "Name", *["%s per %s" % combo for combo in combinations(stats, 2)]]))
+
 
 def get_all_stats(messages):
     """
@@ -74,11 +78,13 @@ def get_all_stats(messages):
     stats = ["Characters", "Messages", "Clusters", "Words"]
 
     # Create a four-layered defaultdict with default int leaf
-    data = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(int))))
+    data = defaultdict(lambda: defaultdict(
+        lambda: defaultdict(lambda: defaultdict(int))))
 
     prev_sender = None
     for message in reversed(messages):
-        timestamp = datetime.datetime.fromtimestamp(message["timestamp"])
+        timestamp = datetime.datetime.fromtimestamp(
+            message["timestamp_ms"]/1000)
         sender_name = message["sender_name"]
         if ANONYMOUS and sender_name != friends.MY_NAME:
             sender_name = nh.hash_by_name(sender_name)
@@ -90,7 +96,8 @@ def get_all_stats(messages):
             # Aggregate for messages, characters, clusters, words
             for name in [sender_name, "total"]:
                 data["Characters"][period][name][m_time] += len(content)
-                data["Words"][period][name][m_time] += len([i for i in content.split(" ") if ".com" not in i])
+                data["Words"][period][name][m_time] += len(
+                    [i for i in content.split(" ") if ".com" not in i])
                 # data["Words"][period][name][m_time] += len(content.split(" "))
                 data["Messages"][period][name][m_time] += 1
                 if sender_name != prev_sender:
@@ -98,6 +105,7 @@ def get_all_stats(messages):
 
         prev_sender = sender_name
     return data
+
 
 def graph_stat(path=friends.BEST_FRIEND, stat="Messages", period="Year"):
     """
@@ -108,6 +116,7 @@ def graph_stat(path=friends.BEST_FRIEND, stat="Messages", period="Year"):
 
     data = get_all_stats(messages)
     _graph_stat(data, stat=stat, period=period)
+
 
 def _graph_stat(data, stat="Messages", period="Month", name="total", message_data=None):
     """
@@ -139,7 +148,9 @@ def _graph_stat(data, stat="Messages", period="Month", name="total", message_dat
     # plt.legend()
 
     plt.ylabel('# of %s' % stat)
-    plt.title("%s between %s per %s" % (stat, " and ".join([i for i in data[stat][period].keys() if i != "total"]), period))
+    plt.title("%s between %s per %s" % (stat, " and ".join(
+        [i for i in data[stat][period].keys() if i != "total"]), period))
+
 
 def top_n_stat(n=3, stat="Messages", period="Month", show_counts=False):
     """
@@ -159,15 +170,18 @@ def top_n_stat(n=3, stat="Messages", period="Month", show_counts=False):
 
         for date, count in message_data.items():
             res[date].append((name, count))
-    
+
     # We want to sort by date
     res_list = sorted([[date, count_list] for date, count_list in res.items()])
 
     table_data = []
     for date, count_list in res_list[-20:]:
-        date_str = date.strftime(time_format(period))                     # Format date by period
-        count_list.sort(key=lambda x: x[1], reverse=True)                 # Sort by count
-        count_list = count_list[:n]                                       # Truncate to top n
+        # Format date by period
+        date_str = date.strftime(time_format(period))
+        # Sort by count
+        count_list.sort(key=lambda x: x[1], reverse=True)
+        # Truncate to top n
+        count_list = count_list[:n]
         if show_counts:
             name_and_counts = []
             for name, count in count_list:
@@ -177,13 +191,15 @@ def top_n_stat(n=3, stat="Messages", period="Month", show_counts=False):
                 name_and_counts.append(s)
             table_data.append([date_str, *name_and_counts])
         else:
-            table_data.append([date_str, *[name for name, count in count_list]])
+            table_data.append(
+                [date_str, *[name for name, count in count_list]])
     print("Top %d Most %s per %s" % (n, stat, period))
-    print(tabulate(table_data, headers=[period, *["#%d" % i for i in range(1, n+1)]]))
+    print(tabulate(table_data, headers=[
+          period, *["#%d" % i for i in range(1, n+1)]]))
 
     # Attempt to use matplotlib for tables... ASCII seems better
     # TODO better table?
-    # fig, ax = plt.subplots() 
+    # fig, ax = plt.subplots()
     # fig.patch.set_visible(False)
     # ax.axis('off')
     # ax.axis('tight')
@@ -228,6 +244,7 @@ def total_stat_sent(stat="Messages", period="Year"):
     plt.ylabel('# of %s' % stat)
     plt.title("Total %s Sent %s per %s" % (stat, friends.MY_NAME, period))
 
+
 def count_specific_words(WORDS, path=friends.BEST_FRIEND):
     """
     Count frequency of WORDS between people in paths
@@ -251,6 +268,7 @@ def count_specific_words(WORDS, path=friends.BEST_FRIEND):
         table.append([keyword, *participants.values()])
     print(tabulate(table, headers=["Word", *participants.keys()]))
 
+
 def count_links(paths=friends.ALL_FRIEND_PATHS[:20]):
     """
     Count links sent between friends
@@ -270,9 +288,9 @@ def count_links(paths=friends.ALL_FRIEND_PATHS[:20]):
             counters[sender] += num_links
 
         table.append([
-            participant, 
-            counters[friends.MY_NAME]/counters[participant], 
-            counters[friends.MY_NAME], 
+            participant,
+            counters[friends.MY_NAME]/counters[participant],
+            counters[friends.MY_NAME],
             counters[participant],
             counters[friends.MY_NAME] + counters[participant]])
     table.sort(key=lambda x: x[1], reverse=True)
@@ -281,11 +299,13 @@ def count_links(paths=friends.ALL_FRIEND_PATHS[:20]):
         for row in table:
             row[0] = nh.hash_by_name(row[0])
 
-    print(tabulate(table, headers=["Name", "Ratio of Links", "Sent by me", "Sent by other", "Total"]))
+    print(tabulate(table, headers=[
+          "Name", "Ratio of Links", "Sent by me", "Sent by other", "Total"]))
     avg = np.average([x[1] for x in table if x[2] > 50])
     stdev = np.std([x[1] for x in table])
     print("Average Ratio: %f" % avg)
     print("Ratio STDEV: %F" % stdev)
+
 
 if __name__ == "__main__":
     """
@@ -297,7 +317,7 @@ if __name__ == "__main__":
     "Clusters": all messages sent before being interupted by other participant is one cluster
     "Words": Naively defined as length of space separated message
     """
-    # graph_stat(friends.BEST_FRIEND, stat="Messages", period="Year")
+    graph_stat(friends.ZAIBO_WANG, stat="Characters", period="Month")
     # top_n_stat(n=4, stat="Characters", period="Month", show_counts=True)
     # count_links(friends.ALL_FRIEND_PATHS[:20])
     # generate_averages(friends.ALL_FRIEND_PATHS)

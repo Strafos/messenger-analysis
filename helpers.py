@@ -2,13 +2,16 @@ import json
 import datetime
 from collections import defaultdict
 
+
 def get_json(path):
     with open(path, "r") as f:
         return json.loads(f.read())
 
+
 def check_participants(message_json):
     """To check 1 on 1 messages"""
-    return len(message_json.get("participants", [])) == 1 
+    return len(message_json.get("participants", [])) == 2
+
 
 def bucket_datetime(timestamp, period="Month"):
     """
@@ -26,6 +29,7 @@ def bucket_datetime(timestamp, period="Month"):
         return datetime.datetime(year=timestamp.year, month=1, day=1)
     raise Exception("Unsupported period: %s", period)
 
+
 def count_messages(messages):
     counters = defaultdict(int)
     participants = set()
@@ -34,6 +38,7 @@ def count_messages(messages):
         participants.add(sender)
         counters[sender] += 1
     return sum(counters.values()) if len(participants) == 2 else 0
+
 
 def time_format(period):
     """strftime formatting"""
@@ -44,6 +49,7 @@ def time_format(period):
     elif period == "Year":
         return "%Y"
 
+
 def message_dump(messages, period="Month"):
     """
     Dump messages from a specific time
@@ -52,7 +58,8 @@ def message_dump(messages, period="Month"):
         participant = message["sender_name"]
 
         # Grab timestamp from message and cast it to a month + year timestamp
-        timestamp = datetime.datetime.fromtimestamp(message["timestamp"])
+        timestamp = datetime.datetime.fromtimestamp(
+            message["timestamp_ms"]/1000)
         m_time = bucket_datetime(timestamp, period=period)
 
         # We use this to get all messages from a certain month
@@ -60,6 +67,7 @@ def message_dump(messages, period="Month"):
         if TARGET == m_time:
             with open("message_dump.txt", 'a') as f:
                 f.write(participant + ": " + message.get("content", "") + "\n")
+
 
 width_dict = {
     "Year": 200,
