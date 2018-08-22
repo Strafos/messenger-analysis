@@ -25,7 +25,7 @@ def generate_averages(paths=friends.ALL_FRIEND_PATHS):
     for path in paths:
         message_json = get_json(path)
         messages = message_json.get("messages", [])
-        participant = message_json.get("participants")[0]
+        participant = message_json.get("participants")[0]['name']
         data = get_all_stats(messages)
 
         for sender in data["Characters"]["Month"]:
@@ -175,7 +175,7 @@ def top_n_stat(n=3, stat="Messages", period="Month", show_counts=False):
     res_list = sorted([[date, count_list] for date, count_list in res.items()])
 
     table_data = []
-    for date, count_list in res_list[-20:]:
+    for date, count_list in res_list[:]:
         # Format date by period
         date_str = date.strftime(time_format(period))
         # Sort by count
@@ -185,6 +185,7 @@ def top_n_stat(n=3, stat="Messages", period="Month", show_counts=False):
         if show_counts:
             name_and_counts = []
             for name, count in count_list:
+                name = name['name']
                 spaces = 30 - len(name) - len(str(count))
                 spaces_str = " "*spaces
                 s = spaces_str.join([name, str(count)])
@@ -278,7 +279,7 @@ def count_links(paths=friends.ALL_FRIEND_PATHS[:20]):
     for path in paths:
         message_json = get_json(path)
         messages = message_json.get("messages", [])
-        participant = message_json.get("participants")[0]
+        participant = message_json.get("participants")[0]['name']
         counters = defaultdict(int)
 
         for message in messages:
@@ -317,12 +318,12 @@ if __name__ == "__main__":
     "Clusters": all messages sent before being interupted by other participant is one cluster
     "Words": Naively defined as length of space separated message
     """
-    graph_stat(friends.ZAIBO_WANG, stat="Characters", period="Month")
-    # top_n_stat(n=4, stat="Characters", period="Month", show_counts=True)
+    # graph_stat(friends.ZAIBO_WANG, stat="Characters", period="Month")
+    top_n_stat(n=4, stat="Messages", period="Month", show_counts=True)
     # count_links(friends.ALL_FRIEND_PATHS[:20])
     # generate_averages(friends.ALL_FRIEND_PATHS)
     # words = ["lol", "lool", "loool", "lmao", "haha", "hahaha", "hahahaha"]
     # count_specific_words(words, friends.BEST_FRIEND)
-    # total_stat_sent(stat="Characters", period="Year")
+    # total_stat_sent(stat="Words", period="Year")
 
     plt.show(block=True)
