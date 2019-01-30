@@ -87,7 +87,7 @@ def generate_friends(n=50):
         names_and_paths = []
         paths = []
         for name, _, path in messages_per_friend[:n]:
-            name = name.upper()
+            name = name['name'].upper()
             regex = re.match(name_pattern, name)
             if not regex:
                 continue
