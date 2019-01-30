@@ -1,8 +1,11 @@
 config.py
 data/
+data*/
 __pycache__
 friends.py
 most_messaged_per_month.txt
 message_dump.txt
 temp.py
 .vscode
+*.out
+*.json

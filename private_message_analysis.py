@@ -164,7 +164,8 @@ def top_n_stat(n=3, stat="Messages", period="Month", show_counts=False):
     res_list = sorted([[date, count_list] for date, count_list in res.items()])
 
     table_data = []
-    for date, count_list in res_list[-20:]:
+    for date, count_list in res_list:
+    # for date, count_list in res_list[-20:]:
         date_str = date.strftime(time_format(period))                     # Format date by period
         count_list.sort(key=lambda x: x[1], reverse=True)                 # Sort by count
         count_list = count_list[:n]                                       # Truncate to top n
@@ -244,6 +245,8 @@ def count_specific_words(WORDS, path=friends.BEST_FRIEND):
             if ANONYMOUS and sender != friends.MY_NAME:
                 sender = nh.hash_by_name(sender)
             content = message.get("content", "")
+            if "dick" in content:
+                print(sender, content)
             count = content.lower().count(keyword)
             counters[keyword][sender] += count
     table = []
@@ -297,12 +300,12 @@ if __name__ == "__main__":
     "Clusters": all messages sent before being interupted by other participant is one cluster
     "Words": Naively defined as length of space separated message
     """
-    # graph_stat(friends.BEST_FRIEND, stat="Messages", period="Year")
-    # top_n_stat(n=4, stat="Characters", period="Month", show_counts=True)
+    # graph_stat(friends.HORACE_HE, stat="Characters", period="Month")
+    top_n_stat(n=5, stat="Characters", period="Day", show_counts=True)
     # count_links(friends.ALL_FRIEND_PATHS[:20])
     # generate_averages(friends.ALL_FRIEND_PATHS)
-    # words = ["lol", "lool", "loool", "lmao", "haha", "hahaha", "hahahaha"]
-    # count_specific_words(words, friends.BEST_FRIEND)
+    # words = ["fuck", "shit", "dick", "gay", "butthole", "haha", "hahaha", "hahahaha"]
+    # count_specific_words(words, friends.HORACE_HE)
     # total_stat_sent(stat="Characters", period="Year")
 
     plt.show(block=True)
