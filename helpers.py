@@ -59,7 +59,8 @@ def message_dump(messages, period="Month"):
         participant = message["sender_name"]
 
         # Grab timestamp from message and cast it to a month + year timestamp
-        timestamp = datetime.datetime.fromtimestamp(message["timestamp"])
+        timestamp = datetime.datetime.fromtimestamp(
+            message["timestamp_ms"]/1000)
         m_time = bucket_datetime(timestamp, period=period)
 
         # We use this to get all messages from a certain month

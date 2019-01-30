@@ -1,9 +1,12 @@
 import os
 import re
 import argparse
+import glob
 from pprint import pprint
 
 from helpers import get_json, count_messages, check_participants
+
+my_name = None
 
 """
 This file generates friends.py which is needed for all data analysis
@@ -60,9 +63,14 @@ def generate_friends(n=50):
 
     for path in all_paths:
         message_json = get_json(path)
+        print(path)
         if check_participants(message_json):
             messages = message_json.get("messages", [])
-            participant = message_json.get("participants")[0]
+            participant = message_json.get("participants")
+            participant = [i for i in participant if i['name'] != my_name]
+            if len(participant) != 1:
+                continue
+            participant = participant[0]['name']
             total_messages = count_messages(messages)
             if total_messages != 0:
                 messages_per_friend.append((participant, total_messages, path))
