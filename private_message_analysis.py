@@ -262,6 +262,8 @@ def count_specific_words(WORDS, path=friends.BEST_FRIEND):
             if ANONYMOUS and sender != friends.MY_NAME:
                 sender = nh.hash_by_name(sender)
             content = message.get("content", "")
+            if "dick" in content:
+                print(sender, content)
             count = content.lower().count(keyword)
             counters[keyword][sender] += count
     table = []

@@ -11,6 +11,10 @@ def get_json(path):
 def check_participants(message_json):
     """To check 1 on 1 messages"""
     return len(message_json.get("participants", [])) == 2
+<<<<<<< HEAD
+=======
+    # return len(message_json.get("participants", [])) == 1
+>>>>>>> Previous changes
 
 
 def bucket_datetime(timestamp, period="Month"):
