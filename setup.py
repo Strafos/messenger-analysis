@@ -9,7 +9,7 @@ from helpers import get_json, count_messages, check_participants
 This file generates friends.py which is needed for all data analysis
 """
 
-# To look at groupchats, use find_groupchat() in setup.py 
+# To look at groupchats, use find_groupchat() in setup.py
 # by adding your conditions to narrow down the search
 # Then, add them to the GROUPCHATS list
 GROUPCHATS = [
@@ -17,6 +17,7 @@ GROUPCHATS = [
     # ("situation_room", "/home/zaibo/code/fb_analysis/data/thesituationroom_69ae5d10b1/message.json"),
     # ("eggplant", "/home/zaibo/code/fb_analysis/data/96a68cd96d/message.json")
 ]
+
 
 def find_groupchat():
     """
@@ -38,6 +39,7 @@ def find_groupchat():
         if len(party) > 15:
             print(path)
 
+
 def generate_friends(n=50):
     """
     Generate friends.py which is used by most of the other scripts
@@ -45,7 +47,7 @@ def generate_friends(n=50):
     """
     all_paths = []
     for dir in os.listdir(base_dir):
-        if dir.startswith("."): # Macs have a .DS_STORE file which throws an exception
+        if dir.startswith("."):  # Macs have a .DS_STORE file which throws an exception
             continue
         inner_dir = base_dir + "/" + dir
         for filename in os.listdir(inner_dir):
@@ -66,7 +68,6 @@ def generate_friends(n=50):
                 messages_per_friend.append((participant, total_messages, path))
     messages_per_friend.sort(key=lambda x: x[1], reverse=True)
 
-
     # People have weird names, this regex can break...
     name_pattern = "(?P<first_name>([A-Z]|-)*) (?P<last_name>([A-Z]|-)*)"
     with open("friends.py", "w") as f:
@@ -78,13 +79,14 @@ def generate_friends(n=50):
         names_and_paths = []
         paths = []
         for name, _, path in messages_per_friend[:n]:
-            name = name.upper()
+            name = name['name'].upper()
             regex = re.match(name_pattern, name)
             if not regex:
                 continue
             # Some people have weird names, I did not handle edge cases
-            parsed_name = "_".join([regex.group("first_name"), regex.group("last_name")])
-            parsed_name = parsed_name.replace(" ", "_").replace("-", "_") 
+            parsed_name = "_".join(
+                [regex.group("first_name"), regex.group("last_name")])
+            parsed_name = parsed_name.replace(" ", "_").replace("-", "_")
 
             write_wrapper(f, parsed_name, path)
 
@@ -92,6 +94,7 @@ def generate_friends(n=50):
             paths.append(path)
         f.write("ALL_FRIENDS = %s\n" % str(names_and_paths))
         f.write("ALL_FRIEND_PATHS = %s\n" % str(paths))
+
 
 def generate_groupchats():
     """
@@ -102,17 +105,23 @@ def generate_groupchats():
         for name, path in GROUPCHATS:
             write_wrapper(f, name, path)
 
+
 def generate_name():
     with open("friends.py", "a") as f:
         write_wrapper(f, "MY_NAME", my_name)
 
+
 def write_wrapper(f, variable, value):
     f.write("%s = \"%s\"\n" % (variable, value))
 
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Configs for setting up data source')
-    parser.add_argument('--dir', help="Path to unzipped messages directory" ,required=True)
-    parser.add_argument('--name', help="Your name in the format 'John Smith'", required=True)
+    parser = argparse.ArgumentParser(
+        description='Configs for setting up data source')
+    parser.add_argument(
+        '--dir', help="Path to unzipped messages directory", required=True)
+    parser.add_argument(
+        '--name', help="Your name in the format 'John Smith'", required=True)
     args = parser.parse_args()
 
     base_dir = args.dir
