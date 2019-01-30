@@ -175,6 +175,7 @@ def top_n_stat(n=3, stat="Messages", period="Month", show_counts=False):
     res_list = sorted([[date, count_list] for date, count_list in res.items()])
 
     table_data = []
+
     for date, count_list in res_list[:]:
         # Format date by period
         date_str = date.strftime(time_format(period))
@@ -320,8 +321,8 @@ if __name__ == "__main__":
     "Clusters": all messages sent before being interupted by other participant is one cluster
     "Words": Naively defined as length of space separated message
     """
-    # graph_stat(friends.ZAIBO_WANG, stat="Characters", period="Month")
-    top_n_stat(n=4, stat="Messages", period="Month", show_counts=True)
+    # graph_stat(friends.BEST_FRIEND, stat="Characters", period="Day")
+    # top_n_stat(n=4, stat="Characters", period="Day", show_counts=True)
     # count_links(friends.ALL_FRIEND_PATHS[:20])
     # generate_averages(friends.ALL_FRIEND_PATHS)
     # words = ["lol", "lool", "loool", "lmao", "haha", "hahaha", "hahahaha"]
