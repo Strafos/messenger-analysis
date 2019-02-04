@@ -104,10 +104,11 @@ def get_all_stats(messages):
                     data["Clusters"][period][name][m_time] += 1
 
         prev_sender = sender_name
+
     return data
 
 
-def graph_stat(path=friends.BEST_FRIEND, stat="Messages", period="Year"):
+def graph_stat(path=friends.BEST_FRIEND, stat="Messages", period="Year", avg=False):
     """
     graph_stat wrapper that parses from a path
     """
@@ -115,10 +116,10 @@ def graph_stat(path=friends.BEST_FRIEND, stat="Messages", period="Year"):
     messages = message_json.get("messages", [])
 
     data = get_all_stats(messages)
-    _graph_stat(data, stat=stat, period=period)
+    _graph_stat(data, stat=stat, period=period, avg=avg)
 
 
-def _graph_stat(data, stat="Messages", period="Month", name="total", message_data=None):
+def _graph_stat(data, stat="Messages", period="Month", name="total", message_data=None, avg=False):
     """
     The real graph stat function
     Graph parameterized stat from get_all_stats
@@ -130,6 +131,14 @@ def _graph_stat(data, stat="Messages", period="Month", name="total", message_dat
     dates = date2num(list(message_data.keys()))
     counts = np.array(list(message_data.values()))
     dates, counts = zip(*sorted(zip(dates, counts)))
+
+    if avg:
+        dates, counts = list(dates), list(counts)
+        new_counts = counts[:]
+        for i in range(1, len(counts)-1):
+            new_counts[i] = counts[i-1] + counts[i] + counts[i+1]
+        counts = new_counts[1:-1]
+        dates = dates[1:-1]
 
     ### BAR GRAPH ###
     bar = plt.bar(dates, counts, width=width_dict[period])
@@ -321,8 +330,9 @@ if __name__ == "__main__":
     "Clusters": all messages sent before being interupted by other participant is one cluster
     "Words": Naively defined as length of space separated message
     """
-    # graph_stat(friends.BEST_FRIEND, stat="Characters", period="Day")
-    # top_n_stat(n=4, stat="Characters", period="Day", show_counts=True)
+    graph_stat(friends.JAIDEV_PHADKE, stat="Characters",
+               period="Month", avg=True)
+    # top_n_stat(n=4, stat="Characters", period="Month", show_counts=True)
     # count_links(friends.ALL_FRIEND_PATHS[:20])
     # generate_averages(friends.ALL_FRIEND_PATHS)
     # words = ["lol", "lool", "loool", "lmao", "haha", "hahaha", "hahahaha"]
